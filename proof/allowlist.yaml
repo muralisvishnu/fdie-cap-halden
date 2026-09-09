@@ -1,0 +1,46 @@
+# Egress allowlist — evidence-derived, not padded.
+# Each entry: FQDN, port, component, what breaks without it, install-time|permanent
+
+allowlist:
+  - fqdn: cage-registry.cage-system.svc.cluster.local
+    port: 5000
+    component: all
+    reason: Pull application images from private registry only
+    phase: install-time
+    breaks_without: Pods cannot start; ImagePullBackOff
+
+  - fqdn: egress-proxy.egress-system.svc.cluster.local
+    port: 3128
+    component: cap-web
+    reason: All egress must traverse the corporate proxy (default deny)
+    phase: install-time
+    breaks_without: Any accidental outbound call fails closed at proxy
+
+  - fqdn: mysql.cap.svc.cluster.local
+    port: 3306
+    component: cap-web
+    reason: Application database
+    phase: permanent
+    breaks_without: Cap web cannot authenticate or persist data
+
+  - fqdn: minio.cap.svc.cluster.local
+    port: 9000
+    component: cap-web, media-server
+    reason: S3-compatible object storage for recordings
+    phase: permanent
+    breaks_without: Uploads and playback fail
+
+  - fqdn: media-server.cap.svc.cluster.local
+    port: 3456
+    component: cap-web
+    reason: FFmpeg media processing callbacks
+    phase: permanent
+    breaks_without: Video processing pipeline stalls
+
+  # Runtime air-gap: zero external FQDNs required once images are mirrored.
+  - fqdn: "(none external at runtime)"
+    port: 0
+    component: all
+    reason: Halden requires nothing leaves the network after install
+    phase: permanent
+    breaks_without: N/A — this is the desired steady state

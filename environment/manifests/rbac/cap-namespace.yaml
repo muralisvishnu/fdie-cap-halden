@@ -1,0 +1,48 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: cap
+  labels:
+    pod-security.kubernetes.io/enforce: baseline
+    pod-security.kubernetes.io/audit: restricted
+    pod-security.kubernetes.io/warn: restricted
+    halden.cap/tenant: halden-pharma
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: deployer
+  namespace: cap
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: cap-deployer
+  namespace: cap
+rules:
+  - apiGroups: [""]
+    resources: ["configmaps", "secrets", "services", "persistentvolumeclaims", "pods", "pods/log"]
+    verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+  - apiGroups: ["apps"]
+    resources: ["deployments", "statefulsets"]
+    verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+  - apiGroups: ["batch"]
+    resources: ["jobs"]
+    verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+  - apiGroups: ["networking.k8s.io"]
+    resources: ["ingresses", "networkpolicies"]
+    verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: cap-deployer
+  namespace: cap
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: cap-deployer
+subjects:
+  - kind: ServiceAccount
+    name: deployer
+    namespace: cap

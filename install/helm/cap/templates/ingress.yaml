@@ -1,0 +1,46 @@
+{{- if .Values.ingress.enabled }}
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: cap-web
+  namespace: {{ .Release.Namespace }}
+  annotations:
+    nginx.ingress.kubernetes.io/proxy-body-size: "0"
+spec:
+  ingressClassName: {{ .Values.ingress.className }}
+  rules:
+    {{- if .Values.ingress.catchAll }}
+    - http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: cap-web
+                port:
+                  number: {{ .Values.capWeb.port }}
+    {{- else }}
+    - host: {{ .Values.ingress.host }}
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: cap-web
+                port:
+                  number: {{ .Values.capWeb.port }}
+    {{- if .Values.ingress.s3Host }}
+    - host: {{ .Values.ingress.s3Host }}
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: minio
+                port:
+                  number: 9000
+    {{- end }}
+    {{- end }}
+{{- end }}

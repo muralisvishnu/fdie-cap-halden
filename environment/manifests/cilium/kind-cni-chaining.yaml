@@ -1,0 +1,34 @@
+# Chains Cilium on top of kindnet (ptp + portmap). Required for generic-veth on kind
+# without recreating the cluster with networking.disableDefaultCNI.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: cilium-kind-cni-chaining
+  namespace: kube-system
+data:
+  cni-config: |-
+    {
+      "name": "kindnet",
+      "cniVersion": "0.3.1",
+      "plugins": [
+        {
+          "type": "ptp",
+          "ipMasq": false,
+          "ipam": {
+            "type": "host-local",
+            "dataDir": "/run/cni-ipam-state",
+            "routes": [{ "dst": "0.0.0.0/0" }],
+            "ranges": [[{ "subnet": "10.244.0.0/24" }]]
+          },
+          "mtu": 1500
+        },
+        {
+          "type": "portmap",
+          "capabilities": { "portMappings": true }
+        },
+        {
+          "type": "cilium-cni",
+          "chaining-mode": "generic-veth"
+        }
+      ]
+    }

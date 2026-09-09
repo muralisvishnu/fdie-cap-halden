@@ -1,0 +1,63 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: cage-system
+  labels:
+    pod-security.kubernetes.io/enforce: restricted
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: cage-registry
+  namespace: cage-system
+  labels:
+    app: cage-registry
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: cage-registry
+  template:
+    metadata:
+      labels:
+        app: cage-registry
+    spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        fsGroup: 1000
+      containers:
+        - name: registry
+          image: registry:2
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 5000
+          resources:
+            requests:
+              cpu: 50m
+              memory: 128Mi
+            limits:
+              cpu: 200m
+              memory: 256Mi
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+          volumeMounts:
+            - name: data
+              mountPath: /var/lib/registry
+      volumes:
+        - name: data
+          emptyDir: {}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: cage-registry
+  namespace: cage-system
+spec:
+  selector:
+    app: cage-registry
+  ports:
+    - name: http
+      port: 5000
+      targetPort: 5000

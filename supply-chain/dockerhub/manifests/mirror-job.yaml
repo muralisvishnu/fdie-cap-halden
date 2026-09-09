@@ -1,0 +1,67 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: halden-image-mirror
+  namespace: vishnusmurali
+  labels:
+    app: halden-image-mirror
+spec:
+  ttlSecondsAfterFinished: 3600
+  backoffLimit: 2
+  template:
+    metadata:
+      labels:
+        app: halden-image-mirror
+        team: fdie-cap-halden
+    spec:
+      restartPolicy: Never
+      containers:
+        - name: crane
+          image: gcr.io/go-containerregistry/crane:debug
+          imagePullPolicy: IfNotPresent
+          env:
+            - name: DOCKERHUB_USER
+              value: muralisvishnu
+            - name: DOCKERHUB_REPO
+              value: halden-cage
+          volumeMounts:
+            - name: docker-config
+              mountPath: /root/.docker
+              readOnly: true
+          # crane:debug is distroless; shell lives under /busybox
+          command: ["/busybox/sh", "-ec"]
+          args:
+            - |
+              DEST="docker.io/${DOCKERHUB_USER}/${DOCKERHUB_REPO}"
+              copy() { echo "==> $1 -> ${DEST}:$2"; crane copy "$1" "${DEST}:$2"; }
+
+              # Cage addons (sources with clean egress on GKE)
+              copy quay.io/cilium/cilium:v1.20.1 cilium-v1.20.1
+              copy quay.io/cilium/operator-generic:v1.20.1 cilium-operator-v1.20.1
+              copy quay.io/cilium/cilium-envoy:v1.37.5-1786810558-766ccfb37260a43e9d228837aa84ce3faf9f64e7 cilium-envoy-v1.20.1
+
+              KV=v1.13.2
+              copy ghcr.io/kyverno/kyvernopre:${KV} kyvernopre-${KV}
+              copy ghcr.io/kyverno/kyverno:${KV} kyverno-${KV}
+              copy ghcr.io/kyverno/background-controller:${KV} kyverno-bg-${KV}
+              copy ghcr.io/kyverno/cleanup-controller:${KV} kyverno-cleanup-${KV}
+              copy ghcr.io/kyverno/reports-controller:${KV} kyverno-reports-${KV}
+
+              copy registry.k8s.io/ingress-nginx/controller:v1.15.1 ingress-controller-v1.15.1
+              copy registry.k8s.io/ingress-nginx/kube-webhook-certgen:v1.6.9 ingress-certgen-v1.6.9
+
+              echo "Mirror complete -> ${DEST}:* (cilium, kyverno, ingress)"
+          resources:
+            requests:
+              cpu: 200m
+              memory: 256Mi
+            limits:
+              cpu: "1"
+              memory: 512Mi
+      volumes:
+        - name: docker-config
+          secret:
+            secretName: dockerhub-creds
+            items:
+              - key: .dockerconfigjson
+                path: config.json

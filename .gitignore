@@ -1,0 +1,7 @@
+.build/
+supply-chain/artifacts/*.spdx.json
+*.log
+.DS_Store
+.env
+.env.*
+!.env.example

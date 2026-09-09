@@ -1,0 +1,35 @@
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Helm lint
+        run: helm lint install/helm/cap -f install/helm/cap/values-cage.yaml
+
+      - name: Shellcheck scripts
+        run: |
+          sudo apt-get update -qq && sudo apt-get install -y shellcheck
+          shellcheck scripts/*.sh environment/scripts/*.sh governance/scripts/*.sh supply-chain/*.sh || true
+
+      - name: YAML sanity
+        run: |
+          kubectl apply --dry-run=client -f environment/manifests/proxy/
+          kubectl apply --dry-run=client -f environment/manifests/kyverno/
+
+  terraform-validate:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: install/terraform/gke
+    steps:
+      - uses: actions/checkout@v4
+      - uses: hashicorp/setup-terraform@v3
+      - run: terraform init -backend=false && terraform validate

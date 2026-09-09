@@ -1,0 +1,18 @@
+ingress:
+  enabled: false
+
+capWeb:
+  service:
+    type: NodePort
+    nodePort: 30080
+
+publicUrl: http://localhost:30080
+s3PublicUrl: http://localhost:30900
+
+minio:
+  service:
+    type: NodePort
+    nodePort: 30900
+
+networkPolicy:
+  allowExternalIngress: true

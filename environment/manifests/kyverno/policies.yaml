@@ -1,0 +1,89 @@
+apiVersion: kyverno.io/v1
+kind: ClusterPolicy
+metadata:
+  name: halden-private-registry-only
+spec:
+  validationFailureAction: Enforce
+  background: true
+  rules:
+    - name: only-private-registry-containers
+      match:
+        any:
+          - resources:
+              kinds: ["Pod"]
+              namespaces: ["cap"]
+      validate:
+        message: "Container images must come from an approved private registry"
+        foreach:
+          - list: request.object.spec.containers
+            pattern:
+              image: "localhost:5001/* | docker.io/muralisvishnu/halden-cage:*"
+    - name: only-private-registry-initcontainers
+      match:
+        any:
+          - resources:
+              kinds: ["Pod"]
+              namespaces: ["cap"]
+      preconditions:
+        all:
+          - key: "{{ request.object.spec.initContainers[] || `[]` | length(@) }}"
+            operator: GreaterThan
+            value: 0
+      validate:
+        message: "Init container images must come from an approved private registry"
+        foreach:
+          - list: request.object.spec.initContainers
+            pattern:
+              image: "localhost:5001/* | docker.io/muralisvishnu/halden-cage:*"
+---
+apiVersion: kyverno.io/v1
+kind: ClusterPolicy
+metadata:
+  name: halden-require-limits
+spec:
+  validationFailureAction: Enforce
+  background: true
+  rules:
+    - name: require-resources
+      match:
+        any:
+          - resources:
+              kinds: ["Pod"]
+              namespaces: ["cap"]
+      validate:
+        message: "All containers must define CPU and memory requests and limits"
+        pattern:
+          spec:
+            containers:
+              - resources:
+                  requests:
+                    memory: "?*"
+                    cpu: "?*"
+                  limits:
+                    memory: "?*"
+                    cpu: "?*"
+---
+apiVersion: kyverno.io/v1
+kind: ClusterPolicy
+metadata:
+  name: halden-disallow-privileged
+spec:
+  validationFailureAction: Enforce
+  background: true
+  rules:
+    - name: no-privileged
+      match:
+        any:
+          - resources:
+              kinds: ["Pod"]
+              namespaces: ["cap"]
+      validate:
+        message: "Privileged containers are not allowed"
+        pattern:
+          spec:
+            =(securityContext):
+              =(privileged): "false"
+            containers:
+              - securityContext:
+                  privileged: false
+                  allowPrivilegeEscalation: false

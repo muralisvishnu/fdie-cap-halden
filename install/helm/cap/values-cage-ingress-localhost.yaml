@@ -1,0 +1,22 @@
+# Ingress without /etc/hosts — open http://127.0.0.1:30080 in the browser.
+# Cap via ingress catch-all; Minio via NodePort 30900 (kind already maps it).
+ingress:
+  enabled: true
+  className: nginx
+  catchAll: true
+
+capWeb:
+  service:
+    type: ClusterIP
+
+publicUrl: http://127.0.0.1:30080
+s3PublicUrl: http://127.0.0.1:30900
+
+minio:
+  service:
+    type: NodePort
+    nodePort: 30900
+
+networkPolicy:
+  # NodePort S3 from the laptop is not ingress-nginx; allow host → pod for local dev.
+  allowExternalIngress: true

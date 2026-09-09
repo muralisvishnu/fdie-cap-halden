@@ -1,0 +1,19 @@
+ingress:
+  enabled: true
+  className: nginx
+  host: cap.local
+  s3Host: s3.cap.local
+
+capWeb:
+  service:
+    type: ClusterIP
+
+publicUrl: http://cap.local:30080
+s3PublicUrl: http://s3.cap.local:30080
+
+minio:
+  service:
+    type: ClusterIP
+
+networkPolicy:
+  allowExternalIngress: false

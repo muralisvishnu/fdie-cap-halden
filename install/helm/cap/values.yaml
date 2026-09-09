@@ -1,0 +1,82 @@
+global:
+  registry: localhost:5001
+  imagePullPolicy: IfNotPresent
+
+capWeb:
+  image: cap/cap-web
+  tag: latest
+  port: 3000
+  service:
+    type: ClusterIP
+  resources:
+    requests:
+      cpu: 200m
+      memory: 512Mi
+    limits:
+      cpu: 1000m
+      memory: 1Gi
+
+mediaServer:
+  image: cap/media-server
+  tag: latest
+  port: 3456
+  resources:
+    requests:
+      cpu: 200m
+      memory: 256Mi
+    limits:
+      cpu: 1000m
+      memory: 1Gi
+
+mysql:
+  image: cap/mysql
+  tag: "8.0"
+  database: cap
+  user: cap
+  resources:
+    requests:
+      cpu: 200m
+      memory: 512Mi
+    limits:
+      cpu: 1000m
+      memory: 1Gi
+  storage: 5Gi
+
+minio:
+  image: cap/minio
+  tag: latest
+  mcImage: cap/minio-mc
+  mcTag: latest
+  bucket: cap
+  service:
+    type: ClusterIP
+  resources:
+    requests:
+      cpu: 100m
+      memory: 256Mi
+    limits:
+      cpu: 500m
+      memory: 512Mi
+  storage: 5Gi
+
+ingress:
+  enabled: true
+  className: nginx
+  host: cap.local
+  s3Host: s3.cap.local
+
+publicUrl: http://cap.local
+s3PublicUrl: http://s3.cap.local
+
+secrets:
+  mysqlPassword: cap-local-pwd-123
+  mysqlRootPassword: cap-root-pwd-789
+  minioRootUser: cap-admin
+  minioRootPassword: cap-minio-pwd-456
+  databaseEncryptionKey: "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef"
+  nextauthSecret: "abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789"
+  mediaServerWebhookSecret: "fedcba9876543210fedcba9876543210fedcba9876543210fedcba9876543210"
+
+networkPolicy:
+  enabled: true
+  allowExternalIngress: false

@@ -1,0 +1,86 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: mysql
+  namespace: {{ .Release.Namespace }}
+spec:
+  selector:
+    app: cap-mysql
+  ports:
+    - port: 3306
+      targetPort: 3306
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: cap-mysql
+  namespace: {{ .Release.Namespace }}
+spec:
+  serviceName: mysql
+  replicas: 1
+  selector:
+    matchLabels:
+      app: cap-mysql
+  template:
+    metadata:
+      labels:
+        app: cap-mysql
+        halden.cap/component: mysql
+    spec:
+      securityContext:
+        runAsUser: 999
+        runAsNonRoot: true
+        fsGroup: 999
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: mysql
+          image: {{ include "cap.image" (dict "Values" .Values "image" .Values.mysql.image "tag" .Values.mysql.tag) }}
+          imagePullPolicy: {{ .Values.global.imagePullPolicy }}
+          ports:
+            - containerPort: 3306
+          env:
+            - name: MYSQL_DATABASE
+              value: {{ .Values.mysql.database | quote }}
+            - name: MYSQL_USER
+              value: {{ .Values.mysql.user | quote }}
+            - name: MYSQL_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: cap-secrets
+                  key: MYSQL_PASSWORD
+            - name: MYSQL_ROOT_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: cap-secrets
+                  key: MYSQL_ROOT_PASSWORD
+          args:
+            - --max_connections=1000
+            - --default-authentication-plugin=mysql_native_password
+            - --character-set-server=utf8mb4
+            - --collation-server=utf8mb4_unicode_ci
+          resources:
+            {{- toYaml .Values.mysql.resources | nindent 12 }}
+          securityContext:
+            {{- include "cap.containerSecurityContext" . | nindent 12 }}
+          volumeMounts:
+            - name: data
+              mountPath: /var/lib/mysql
+          livenessProbe:
+            exec:
+              command: ["mysqladmin", "ping", "-h", "127.0.0.1"]
+            initialDelaySeconds: 30
+            periodSeconds: 10
+          readinessProbe:
+            exec:
+              command: ["mysqladmin", "ping", "-h", "127.0.0.1"]
+            initialDelaySeconds: 10
+            periodSeconds: 5
+  volumeClaimTemplates:
+    - metadata:
+        name: data
+      spec:
+        accessModes: ["ReadWriteOnce"]
+        resources:
+          requests:
+            storage: {{ .Values.mysql.storage }}

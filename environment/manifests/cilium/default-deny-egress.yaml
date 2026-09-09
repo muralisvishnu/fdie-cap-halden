@@ -1,0 +1,37 @@
+apiVersion: cilium.io/v2
+kind: CiliumClusterwideNetworkPolicy
+metadata:
+  name: default-deny-egress
+spec:
+  endpointSelector: {}
+  egress:
+    - toEndpoints:
+        - matchLabels:
+            io.kubernetes.pod.namespace: kube-system
+            k8s-app: kube-dns
+      toPorts:
+        - ports:
+            - port: "53"
+              protocol: UDP
+            - port: "53"
+              protocol: TCP
+    - toEndpoints:
+        - matchLabels:
+            io.kubernetes.pod.namespace: egress-system
+            app: egress-proxy
+      toPorts:
+        - ports:
+            - port: "3128"
+              protocol: TCP
+    - toEndpoints:
+        - matchLabels:
+            io.kubernetes.pod.namespace: cage-system
+            app: cage-registry
+      toPorts:
+        - ports:
+            - port: "5000"
+              protocol: TCP
+    - toEntities:
+        - cluster
+    - toEntities:
+        - host

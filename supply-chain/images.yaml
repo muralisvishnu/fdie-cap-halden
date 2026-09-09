@@ -1,0 +1,30 @@
+# Image inventory for air-gap relocation (bootstrap host only).
+images:
+  - name: cap-web
+    source: ghcr.io/capsoftware/cap-web:latest
+    target: cap/cap-web:latest
+    build: false
+
+  - name: media-server
+    source: build
+    target: cap/media-server:latest
+    build:
+      repo: https://github.com/CapSoftware/Cap.git
+      ref: main
+      context: apps/media-server
+      dockerfile: Dockerfile.standalone
+
+  - name: mysql
+    source: docker.io/library/mysql:8.0
+    target: cap/mysql:8.0
+    build: false
+
+  - name: minio
+    source: docker.io/minio/minio:latest
+    target: cap/minio:latest
+    build: false
+
+  - name: minio-mc
+    source: docker.io/minio/mc:latest
+    target: cap/minio-mc:latest
+    build: false

@@ -1,0 +1,37 @@
+global:
+  registry: docker.io/muralisvishnu/halden-cage
+  imagePullPolicy: IfNotPresent
+
+capWeb:
+  image: cap-web
+  tag: latest
+
+mediaServer:
+  image: media-server
+  tag: latest
+
+mysql:
+  image: mysql
+  tag: "8.0"
+
+minio:
+  image: minio
+  tag: latest
+  mcImage: minio-mc
+  mcTag: latest
+  service:
+    type: ClusterIP
+
+ingress:
+  enabled: true
+  className: nginx
+  catchAll: false
+  host: cap.halden.example.com
+  s3Host: s3.halden.example.com
+
+publicUrl: https://cap.halden.example.com
+s3PublicUrl: https://s3.halden.example.com
+
+networkPolicy:
+  enabled: true
+  allowExternalIngress: false

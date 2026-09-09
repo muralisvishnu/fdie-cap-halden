@@ -1,0 +1,27 @@
+# muralisvishnu/halden-cage — addon image tags (mirrored from GKE)
+registry: docker.io/muralisvishnu/halden-cage
+
+addons:
+  cilium:
+    - tag: cilium-v1.20.1
+      upstream: quay.io/cilium/cilium:v1.20.1
+    - tag: cilium-operator-v1.20.1
+      upstream: quay.io/cilium/operator-generic:v1.20.1
+    - tag: cilium-envoy-v1.20.1
+      upstream: quay.io/cilium/cilium-envoy:v1.37.5-1786810558-766ccfb37260a43e9d228837aa84ce3faf9f64e7
+  kyverno:
+    - tag: kyvernopre-v1.13.2
+      upstream: ghcr.io/kyverno/kyvernopre:v1.13.2
+    - tag: kyverno-v1.13.2
+      upstream: ghcr.io/kyverno/kyverno:v1.13.2
+    - tag: kyverno-bg-v1.13.2
+      upstream: ghcr.io/kyverno/background-controller:v1.13.2
+    - tag: kyverno-cleanup-v1.13.2
+      upstream: ghcr.io/kyverno/cleanup-controller:v1.13.2
+    - tag: kyverno-reports-v1.13.2
+      upstream: ghcr.io/kyverno/reports-controller:v1.13.2
+  ingress:
+    - tag: ingress-controller-v1.15.1
+      upstream: registry.k8s.io/ingress-nginx/controller:v1.15.1
+    - tag: ingress-certgen-v1.6.9
+      upstream: registry.k8s.io/ingress-nginx/kube-webhook-certgen:v1.6.9
