@@ -1,6 +1,7 @@
 .build/
 supply-chain/artifacts/*.spdx.json
 *.log
+!proof/airgap-test.log
 .DS_Store
 .env
 .env.*
