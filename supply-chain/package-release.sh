@@ -37,7 +37,9 @@ cp "${ROOT}/scripts/install.sh" "${ROOT}/scripts/preflight.sh" "${ROOT}/scripts/
 cp "${ROOT}/scripts/verify-proof.sh" "${STAGE}/scripts/" 2>/dev/null || true
 mkdir -p "${STAGE}/docs"
 cp "${ROOT}/AGENTS.md" "${STAGE}/"
-cp "${ROOT}/docs/customer-install.md" "${ROOT}/docs/install-contract.md" "${ROOT}/docs/ai-protocol.md" "${ROOT}/docs/image-supply-model.md" "${STAGE}/docs/"
+cp "${ROOT}/docs/customer-install.md" "${ROOT}/docs/install-contract.md" "${ROOT}/docs/ai-protocol.md" \
+  "${ROOT}/docs/image-supply-model.md" "${ROOT}/docs/customer-image-delivery.md" "${STAGE}/docs/"
+cp "${ROOT}/supply-chain/import-release-images.sh" "${STAGE}/scripts/"
 cp "${ROOT}/install/helm/cap/values-customer.example.yaml" "${STAGE}/values-customer.example.yaml"
 cp "${ROOT}/supply-chain/images.yaml" "${STAGE}/"
 cp "${ROOT}/proof/security-checklist.md" "${STAGE}/proof/" 2>/dev/null || true
@@ -66,6 +68,10 @@ Customer handoff package. AI entry: \`AGENTS.md\`. Install contract: \`docs/cust
 | \`tests/\` | Smoke + e2e test framework |
 | \`proof/\` | Air-gap proof + security checklist |
 | \`sbom/\` | SPDX SBOMs (when \`make attest\` was run) |
+| \`docs/customer-image-delivery.md\` | Air-gap SFTP/USB/DMZ playbook |
+| \`scripts/import-release-images.sh\` | Load offline image tarballs |
+
+Images tarball (separate): \`halden-cap-images-${VERSION}.tar.gz\` from \`make export-release-images\`
 
 ## Quick lab smoke (after install)
 

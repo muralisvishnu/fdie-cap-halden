@@ -4,7 +4,8 @@ This is the **customer-facing** half of the install contract. For what “contra
 
 **Summary:** Vendor ships a qualified build (Tier 1, default); Halden **imports** pinned images into your private registry, applies policies, installs the Helm chart, and runs smoke tests. If `preflight.sh` and `smoke-test.sh` both exit 0, the install meets spec.
 
-Image supply tiers: [image-supply-model.md](image-supply-model.md).
+Image supply tiers: [image-supply-model.md](image-supply-model.md).  
+Air-gap delivery (SFTP/USB/DMZ): [customer-image-delivery.md](customer-image-delivery.md).
 
 ## 1. Receive the bundle
 
@@ -24,19 +25,20 @@ Verify checksum: `shasum -a 256 -c halden-cap-bundle-*.tar.gz.sha256`
 
 ## 2. Images — Tier 1 (default): import vendor-qualified build
 
-The release bundle includes `image-manifest.yaml` with pinned digests from the vendor reference build. **You import** — you do not compile Cap unless Tier 2 is contractually required.
+Vendor ships **`halden-cap-images-<ver>.tar.gz`** separately from the bundle (no internet required). See [customer-image-delivery.md](customer-image-delivery.md).
 
 ```bash
-# Import each image from vendor relay or secure drop into your private registry
-# Example with crane (adjust refs from image-manifest.yaml):
-crane copy docker.io/vendor/cap-web@sha256:<digest> \
-  registry.halden.pharma/cap/cap-web:latest
-crane copy docker.io/vendor/media-server@sha256:<digest> \
-  registry.halden.pharma/cap/media-server:latest
-# ... mysql, minio, minio-mc per manifest
+tar -xzf halden-cap-images-0.1.0.tar.gz
+cd halden-cap-images-0.1.0
+shasum -a 256 -c SHA256SUMS
+
+export REGISTRY_HOST=registry.halden.pharma/cap
+bash import-release-images.sh .
 ```
 
-Record digests in your change ticket. Run `bash scripts/preflight.sh` after import to verify all images are present.
+Alternative (connected lab only): `crane copy` from vendor registry using digests in `image-manifest.yaml`.
+
+Record digests in your change ticket. Run `bash scripts/preflight.sh` after import.
 
 ### Tier 2 (optional): customer build
 

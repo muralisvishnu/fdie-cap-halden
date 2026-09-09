@@ -10,7 +10,7 @@ TARGET ?= cage
 GKE_CONTEXT ?= gke_sre-play_us-west1_infra
 GKE_REGISTRY ?= docker.io/muralisvishnu
 
-.PHONY: help ensure-colima up down mirror mirror-to-registry attest install install-ingress install-gke install-addons restore-egress auth-login uninstall rollback airgap-test preflight preflight-gke status status-gke destroy package verify-proof test-smoke test-e2e test-all smoke-test
+.PHONY: help ensure-colima up down mirror mirror-to-registry export-release-images attest install install-ingress install-gke install-addons restore-egress auth-login uninstall rollback airgap-test preflight preflight-gke status status-gke destroy package verify-proof test-smoke test-e2e test-all smoke-test
 
 _install_deps:
 ifeq ($(TARGET),cage)
@@ -33,7 +33,8 @@ help:
 	@echo "  make restore-egress  Restore Squid allowlist after airgap test"
 	@echo "  make auth-login      Watch cap-web logs for email OTP codes"
 	@echo "  make attest          SBOM + cosign (requires syft/cosign)"
-	@echo "  make package         BYOC customer bundle (chart + manifest + proof)"
+	@echo "  make package                 BYOC customer bundle (chart + manifest + proof)"
+	@echo "  make export-release-images   Offline image tarballs for air-gap delivery"
 	@echo "  make verify-proof    Check proof artifacts before release"
 	@echo "  make test-smoke      Smoke tests (preflight + HTTP + pods)"
 	@echo "  make test-e2e        E2E tests (includes airgap on reference cage)"
@@ -77,6 +78,9 @@ preflight-gke:
 
 mirror-to-registry:
 	@REGISTRY_HOST=$(GKE_REGISTRY) bash supply-chain/mirror-to-registry.sh
+
+export-release-images: ensure-colima
+	@bash supply-chain/export-release-images.sh
 
 install: _install_deps
 	@ALLOW_NON_THURSDAY=1 TARGET=$(TARGET) REGISTRY_HOST=$(REGISTRY_INCLUSTER) CAP_NAMESPACE=$(CAP_NAMESPACE) bash scripts/install.sh

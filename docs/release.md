@@ -117,10 +117,12 @@ You can also trigger manually: **Actions → release → Run workflow**.
 
 ## What to send Halden
 
-1. `halden-cap-bundle-<version>.tar.gz`
-2. `halden-cap-bundle-<version>.tar.gz.sha256`
-3. Link to `docs/customer-install.md` (in repo or copy into ticket)
-4. Change ticket referencing image digests from `image-manifest.yaml`
+1. `halden-cap-bundle-<version>.tar.gz` + `.sha256`
+2. `halden-cap-images-<version>.tar.gz` + `.sha256` (`make export-release-images`)
+3. `docs/customer-image-delivery.md` (in bundle) — SFTP/USB/DMZ playbook
+4. Change ticket referencing digests from `image-manifest.yaml`
+
+See [customer-image-delivery.md](customer-image-delivery.md) for secure transfer options.
 
 ## CI vs release
 

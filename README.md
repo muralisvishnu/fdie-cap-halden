@@ -58,6 +58,7 @@ Tag `v0.1.0` triggers `.github/workflows/release.yml` to attach the bundle to Gi
 - `docs/install-contract.md` — BYOC install contract explained
 - `docs/customer-install.md` — customer install guide
 - `docs/image-supply-model.md` — Tier 1 (vendor build + customer import) vs Tier 2
+- `docs/customer-image-delivery.md` — air-gap bundle + images via SFTP/USB/DMZ
 - `docs/gke-infra-deploy.md` — GKE infra cluster deploy (Tier 1)
 - `docs/runbook.md` — reference cage operations
 - `docs/decisions.md` — ADRs
