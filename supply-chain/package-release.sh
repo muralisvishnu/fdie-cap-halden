@@ -37,7 +37,7 @@ cp "${ROOT}/scripts/install.sh" "${ROOT}/scripts/preflight.sh" "${ROOT}/scripts/
 cp "${ROOT}/scripts/verify-proof.sh" "${STAGE}/scripts/" 2>/dev/null || true
 mkdir -p "${STAGE}/docs"
 cp "${ROOT}/AGENTS.md" "${STAGE}/"
-cp "${ROOT}/docs/customer-install.md" "${ROOT}/docs/install-contract.md" "${ROOT}/docs/ai-protocol.md" "${STAGE}/docs/"
+cp "${ROOT}/docs/customer-install.md" "${ROOT}/docs/install-contract.md" "${ROOT}/docs/ai-protocol.md" "${ROOT}/docs/image-supply-model.md" "${STAGE}/docs/"
 cp "${ROOT}/install/helm/cap/values-customer.example.yaml" "${STAGE}/values-customer.example.yaml"
 cp "${ROOT}/supply-chain/images.yaml" "${STAGE}/"
 cp "${ROOT}/proof/security-checklist.md" "${STAGE}/proof/" 2>/dev/null || true

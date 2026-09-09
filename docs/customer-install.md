@@ -2,7 +2,9 @@
 
 This is the **customer-facing** half of the install contract. For what “contract” means and who does what, see [install-contract.md](install-contract.md). For how the vendor cuts a release, see [release.md](release.md). **AI assistants:** start at [AGENTS.md](../AGENTS.md) or [ai-protocol.md](ai-protocol.md) Protocol 2.
 
-**Summary:** Halden mirrors images, applies policies, installs the Helm chart in **your** cluster, and runs smoke tests in **your** lab. If `preflight.sh` and `smoke-test.sh` both exit 0, the install meets spec.
+**Summary:** Vendor ships a qualified build (Tier 1, default); Halden **imports** pinned images into your private registry, applies policies, installs the Helm chart, and runs smoke tests. If `preflight.sh` and `smoke-test.sh` both exit 0, the install meets spec.
+
+Image supply tiers: [image-supply-model.md](image-supply-model.md).
 
 ## 1. Receive the bundle
 
@@ -20,19 +22,33 @@ From a release tag (`v0.1.0`) you get `halden-cap-bundle-<version>.tar.gz` conta
 
 Verify checksum: `shasum -a 256 -c halden-cap-bundle-*.tar.gz.sha256`
 
-## 2. Build and mirror images in **your** infra
+## 2. Images — Tier 1 (default): import vendor-qualified build
 
-Cap app images are **not** shipped ready-to-run. Your build environment compiles Cap and mirrors dependencies:
+The release bundle includes `image-manifest.yaml` with pinned digests from the vendor reference build. **You import** — you do not compile Cap unless Tier 2 is contractually required.
 
 ```bash
-# On a build host with Docker + git (customer network)
-REGISTRY_HOST=registry.halden.pharma/cap bash supply-chain/mirror.sh
-REGISTRY_HOST=registry.halden.pharma/cap bash supply-chain/mirror-to-registry.sh
+# Import each image from vendor relay or secure drop into your private registry
+# Example with crane (adjust refs from image-manifest.yaml):
+crane copy docker.io/vendor/cap-web@sha256:<digest> \
+  registry.halden.pharma/cap/cap-web:latest
+crane copy docker.io/vendor/media-server@sha256:<digest> \
+  registry.halden.pharma/cap/media-server:latest
+# ... mysql, minio, minio-mc per manifest
 ```
 
-Or use your own crane/skopeo pipeline — `image-manifest.yaml` lists required images.
+Record digests in your change ticket. Run `bash scripts/preflight.sh` after import to verify all images are present.
 
-Every Cap pod image must resolve under your registry prefix, e.g. `registry.halden.pharma/cap/cap-web:latest` (GKE layout uses flat names — see `values-gke.yaml`).
+### Tier 2 (optional): customer build
+
+Only if Halden policy requires images built on Halden-controlled builders:
+
+```bash
+REGISTRY_HOST=registry.halden.pharma/cap bash supply-chain/mirror.sh
+```
+
+Vendor provides Dockerfiles and the same install contract; digest parity is Halden's responsibility.
+
+Every Cap pod image must resolve under your registry prefix (flat names per `values-gke.yaml`, or `cap/` prefix per cage layout).
 
 Kyverno policy enforces approved registries only — update `environment/manifests/kyverno/policies.yaml` for your registry host before apply.
 

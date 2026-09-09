@@ -1,5 +1,5 @@
-# GKE / customer cloud — images are built and mirrored in *customer infra*
-# (supply-chain/mirror.sh), then pushed to global.registry. Not shipped pre-built by vendor.
+# GKE / customer cloud — Tier 1: vendor-qualified build, import to global.registry.
+# Vendor runs make mirror + mirror-to-registry; customer imports pinned digests (see docs/image-supply-model.md).
 global:
   registry: docker.io/muralisvishnu
   imagePullPolicy: IfNotPresent

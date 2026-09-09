@@ -64,25 +64,22 @@ Open: http://127.0.0.1:30080 — OTP via `make auth-login`.
 
 ---
 
-## Customer workflow (their infra)
+## Customer workflow (Tier 1 default)
 
-Cap images are **built in customer infra** (`supply-chain/mirror.sh`), not pre-built by vendor.
+Vendor builds (`make mirror`); customer **imports** pinned images from `image-manifest.yaml`. See `docs/image-supply-model.md`.
 
 ```bash
-# Build + push on customer build host
-REGISTRY_HOST=registry.customer.example/cap bash supply-chain/mirror.sh
-REGISTRY_HOST=registry.customer.example/cap bash supply-chain/mirror-to-registry.sh
-
-export TARGET=byoc
-export PREFLIGHT_PROFILE=gke
+# Customer: import vendor images → private registry (crane/skopeo)
+# Then deploy:
+export TARGET=byoc PREFLIGHT_PROFILE=gke
 export REGISTRY_HOST=registry.customer.example/cap
 export KUBE_CONTEXT=<their-context>
-make preflight    # or TARGET=byoc bash scripts/preflight.sh
-TARGET=byoc REGISTRY_HOST=... bash scripts/install.sh
-bash scripts/smoke-test.sh
+bash scripts/preflight.sh && TARGET=byoc bash scripts/install.sh && bash scripts/smoke-test.sh
 ```
 
-GKE infra: `docs/gke-infra-deploy.md` — `make preflight-gke` / `make install-gke`.
+**Tier 2 (optional):** customer runs `supply-chain/mirror.sh` on their build farm.
+
+**GKE infra demo (vendor builds):** `docs/gke-infra-deploy.md` — `make mirror` → `mirror-to-registry` → `make install-gke`.
 
 Pass = `preflight` and `smoke-test` both exit 0.
 

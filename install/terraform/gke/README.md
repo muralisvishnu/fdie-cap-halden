@@ -15,7 +15,7 @@ terraform init
 terraform apply
 ```
 
-## Build + push Cap images (customer infra)
+## Build + push Cap images (Tier 1 — vendor on laptop)
 
 ```bash
 make mirror

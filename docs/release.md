@@ -11,7 +11,9 @@ dist/halden-cap-bundle-<version>.tar.gz
 dist/halden-cap-bundle-<version>.tar.gz.sha256
 ```
 
-It contains everything Halden needs to install Cap in **their** cluster: Helm chart, image manifest, policy manifests, install scripts, smoke tests, and reference proof artifacts.
+It contains everything Halden needs to install Cap in **their** cluster: Helm chart, image manifest (pinned digests from **vendor** `make mirror`), policy manifests, install scripts, smoke tests, and reference proof artifacts.
+
+**Tier 1 (default):** bundle does **not** include image layers — Halden imports from the manifest. See [image-supply-model.md](image-supply-model.md).
 
 | Not a release | Is a release |
 |---------------|--------------|

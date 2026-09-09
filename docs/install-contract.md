@@ -26,7 +26,7 @@ You cannot “CD into prod” for them. You ship **artifacts + rules for how to 
 │     global.registry, publicUrl, secrets, ingress class      │
 ├─────────────────────────────────────────────────────────────┤
 │  2. PROCEDURE — ordered steps both sides expect             │
-│     mirror images → preflight → helm install → smoke test   │
+│     import images (T1) → preflight → helm install → smoke   │
 ├─────────────────────────────────────────────────────────────┤
 │  3. ACCEPTANCE — objective pass/fail                        │
 │     preflight exits 0, smoke-test exits 0, checklist signed │
@@ -84,14 +84,25 @@ Halden runs these in **their** environment. You run the same scripts on the **re
 | Scripts pass on reference cage | GHA deploying to Halden prod |
 | Policy manifests as examples | Halden’s SOC2 audit (they own prod evidence) |
 
+## Image supply (default: Tier 1)
+
+See [image-supply-model.md](image-supply-model.md).
+
+| Tier | Vendor | Customer |
+|------|--------|----------|
+| **1 (default)** | Build Cap (`make mirror`), SBOM/digests, release bundle | Import pinned images into private registry |
+| **2 (optional)** | Dockerfiles + chart only | Run `mirror.sh` on Halden build farm |
+
 ## Vendor vs customer responsibilities
 
 | Responsibility | Vendor (you) | Customer (Halden) |
 |----------------|--------------|-------------------|
 | Helm chart quality | ✅ | |
+| Qualified Cap build (Tier 1) | ✅ | |
 | Reference proof (airgap log) | ✅ | |
-| Release bundle + checksum | ✅ | |
-| Mirror images to their registry | | ✅ |
+| Release bundle + checksum + manifest | ✅ | |
+| Import images to private registry (Tier 1) | | ✅ |
+| Build from source (Tier 2 only) | | ✅ |
 | Set values / secrets | | ✅ |
 | Apply policies in their cluster | | ✅ |
 | Run preflight + smoke in their lab | | ✅ |

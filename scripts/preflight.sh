@@ -135,7 +135,7 @@ check_images() {
     tags=("${REMOTE_IMAGE_TAGS[@]}")
   fi
 
-  log "Checking Cap images in ${REGISTRY_HOST} (built/mirrored in your infra — run supply-chain/mirror.sh)"
+  log "Checking Cap images in ${REGISTRY_HOST} (Tier 1: vendor build + import — see docs/image-supply-model.md)"
 
   for i in "${!repos[@]}"; do
     repo="${repos[$i]}"

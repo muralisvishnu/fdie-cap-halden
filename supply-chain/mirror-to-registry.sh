@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
-# Push Cap images built by mirror.sh to a remote registry (GKE / customer BYOC).
-# Images are built in customer infra — this tags and pushes from the local bootstrap mirror.
+# Tier 1: push vendor-qualified images (from make mirror) to a remote registry.
+# Vendor runs this after localhost:5001 bootstrap; customer imports from manifest (Tier 1) or runs mirror.sh (Tier 2).
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
