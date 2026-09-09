@@ -1,0 +1,26 @@
+---
+description: Halden Cap BYOC — AI must follow install contract and vendor vs customer mode
+alwaysApply: true
+---
+
+# Halden Cap BYOC
+
+Read `AGENTS.md` before cluster ops or customer install work.
+
+## Modes
+- **VENDOR:** local kind cage (`make up`, `make mirror`, addons, `make install-ingress`)
+- **CUSTOMER:** their K8s — `TARGET=byoc`, `PREFLIGHT_PROFILE=byoc`, their `REGISTRY_HOST` / URLs
+
+Ask which mode if unclear. Never deploy to customer prod from CI.
+
+## Install contract (mandatory order)
+1. Mirror images to private registry
+2. `scripts/preflight.sh` → exit 0
+3. `helm upgrade --install` via `scripts/install.sh` or bundle chart
+4. `scripts/smoke-test.sh` → exit 0
+
+## Hard rules
+- No secrets in commits or chat — placeholders only
+- Do not disable Kyverno/Cilium/egress on reference cage without explicit ask
+- Patch `manifests/kyverno/policies.yaml` when customer registry ≠ `localhost:5001`
+- Playbooks: `docs/ai-protocol.md` | Release: `docs/release.md`

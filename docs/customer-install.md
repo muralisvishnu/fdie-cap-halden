@@ -1,6 +1,8 @@
-# Customer install contract — Halden Cap BYOC
+# Customer install guide — Halden Cap BYOC
 
-This document is the handoff contract for Halden (or any BYOC customer). Your team mirrors images, applies policies, installs the Helm chart in **your** cluster, and runs smoke tests in **your** lab.
+This is the **customer-facing** half of the install contract. For what “contract” means and who does what, see [install-contract.md](install-contract.md). For how the vendor cuts a release, see [release.md](release.md). **AI assistants:** start at [AGENTS.md](../AGENTS.md) or [ai-protocol.md](ai-protocol.md) Protocol 2.
+
+**Summary:** Halden mirrors images, applies policies, installs the Helm chart in **your** cluster, and runs smoke tests in **your** lab. If `preflight.sh` and `smoke-test.sh` both exit 0, the install meets spec.
 
 ## 1. Receive the bundle
 

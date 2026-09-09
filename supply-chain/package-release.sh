@@ -35,7 +35,9 @@ cp -R "${ROOT}/environment/manifests/rbac" "${STAGE}/manifests/"
 log "Customer scripts and docs"
 cp "${ROOT}/scripts/install.sh" "${ROOT}/scripts/preflight.sh" "${ROOT}/scripts/smoke-test.sh" "${STAGE}/scripts/"
 cp "${ROOT}/scripts/verify-proof.sh" "${STAGE}/scripts/" 2>/dev/null || true
-cp "${ROOT}/docs/customer-install.md" "${STAGE}/"
+mkdir -p "${STAGE}/docs"
+cp "${ROOT}/AGENTS.md" "${STAGE}/"
+cp "${ROOT}/docs/customer-install.md" "${ROOT}/docs/install-contract.md" "${ROOT}/docs/ai-protocol.md" "${STAGE}/docs/"
 cp "${ROOT}/install/helm/cap/values-customer.example.yaml" "${STAGE}/values-customer.example.yaml"
 cp "${ROOT}/supply-chain/images.yaml" "${STAGE}/"
 cp "${ROOT}/proof/security-checklist.md" "${STAGE}/proof/" 2>/dev/null || true
@@ -48,7 +50,7 @@ cp -R "${ROOT}/tests/lib" "${ROOT}/tests/smoke" "${ROOT}/tests/e2e" "${ROOT}/tes
 cat > "${STAGE}/README-BUNDLE.md" <<EOF
 # Halden Cap BYOC bundle ${VERSION}
 
-Customer handoff package. Install contract: \`customer-install.md\`.
+Customer handoff package. AI entry: \`AGENTS.md\`. Install contract: \`docs/customer-install.md\`.
 
 ## Contents
 
@@ -58,6 +60,8 @@ Customer handoff package. Install contract: \`customer-install.md\`.
 | \`image-manifest.yaml\` | Pinned images (populate digests after mirror) |
 | \`values-customer.example.yaml\` | Required values template |
 | \`manifests/\` | Kyverno, Cilium, egress proxy, RBAC |
+| \`AGENTS.md\` | AI assistant entry point |
+| \`docs/ai-protocol.md\` | Step-by-step AI playbooks |
 | \`scripts/\` | install, preflight, smoke-test |
 | \`tests/\` | Smoke + e2e test framework |
 | \`proof/\` | Air-gap proof + security checklist |

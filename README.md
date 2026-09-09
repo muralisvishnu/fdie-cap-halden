@@ -30,7 +30,11 @@ make airgap-test && make verify-proof
 make package                # dist/halden-cap-bundle-<version>.tar.gz
 ```
 
-See **`docs/customer-install.md`** for the install contract (`global.registry`, `publicUrl`, secrets, preflight, smoke tests).
+| Doc | Audience |
+|-----|----------|
+| [`docs/release.md`](docs/release.md) | Vendor — how to cut a release bundle |
+| [`docs/install-contract.md`](docs/install-contract.md) | Both — what “contract” means in BYOC |
+| [`docs/customer-install.md`](docs/customer-install.md) | Customer — step-by-step install guide |
 
 | Deliverable | Location |
 |-------------|----------|
@@ -42,9 +46,17 @@ See **`docs/customer-install.md`** for the install contract (`global.registry`, 
 
 Tag `v0.1.0` triggers `.github/workflows/release.yml` to attach the bundle to GitHub Releases.
 
+## AI assistants
+
+- **`AGENTS.md`** — start here (Cursor, Claude Code, Copilot)
+- `docs/ai-protocol.md` — vendor + customer playbooks with gates and commands
+- `.cursor/rules/halden-byoc.mdc` — Cursor always-on rule
+
 ## Docs
 
-- `docs/customer-install.md` — customer install contract
+- `docs/release.md` — release process (vendor)
+- `docs/install-contract.md` — BYOC install contract explained
+- `docs/customer-install.md` — customer install guide
 - `docs/runbook.md` — reference cage operations
 - `docs/decisions.md` — ADRs
 - `docs/security-review.md` — threat model
