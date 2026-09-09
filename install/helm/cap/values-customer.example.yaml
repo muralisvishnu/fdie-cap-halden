@@ -1,0 +1,27 @@
+# Copy to values-halden.yaml (or your org name) and fill in before helm install.
+# Required contract fields are marked REQUIRED.
+
+global:
+  registry: registry.halden.pharma/cap  # REQUIRED — your private registry prefix
+
+# REQUIRED — public URLs users and the desktop app will use (TLS recommended)
+publicUrl: https://cap.halden.pharma
+s3PublicUrl: https://s3.cap.halden.pharma
+
+ingress:
+  enabled: true
+  className: nginx  # or your ingress class
+
+# REQUIRED in production — replace all placeholders; never ship defaults
+secrets:
+  mysqlPassword: CHANGE_ME
+  mysqlRootPassword: CHANGE_ME
+  minioRootUser: CHANGE_ME
+  minioRootPassword: CHANGE_ME
+  databaseEncryptionKey: "64_HEX_CHARS________________________________________________"
+  nextauthSecret: "64_HEX_CHARS________________________________________________"
+  mediaServerWebhookSecret: "64_HEX_CHARS________________________________________________"
+
+networkPolicy:
+  enabled: true
+  allowExternalIngress: false  # true only if using NodePort without ingress

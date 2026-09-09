@@ -8,7 +8,7 @@ REGISTRY_INCLUSTER ?= localhost:5001
 CAP_NAMESPACE ?= cap
 TARGET ?= cage
 
-.PHONY: help ensure-colima up down mirror attest install install-ingress install-addons restore-egress auth-login uninstall rollback airgap-test preflight status destroy ci-kind-deploy
+.PHONY: help ensure-colima up down mirror attest install install-ingress install-addons restore-egress auth-login uninstall rollback airgap-test preflight status destroy package verify-proof test-smoke test-e2e test-all smoke-test
 
 help:
 	@echo "Halden Cap BYOC — local-first targets"
@@ -23,7 +23,11 @@ help:
 	@echo "  make restore-egress  Restore Squid allowlist after airgap test"
 	@echo "  make auth-login      Watch cap-web logs for email OTP codes"
 	@echo "  make attest          SBOM + cosign (requires syft/cosign)"
-	@echo "  make ci-kind-deploy  kind + mirror + helm install/upgrade (CI parity)"
+	@echo "  make package         BYOC customer bundle (chart + manifest + proof)"
+	@echo "  make verify-proof    Check proof artifacts before release"
+	@echo "  make test-smoke      Smoke tests (preflight + HTTP + pods)"
+	@echo "  make test-e2e        E2E tests (includes airgap on reference cage)"
+	@echo "  make smoke-test      Customer lab entrypoint (alias: test-smoke)"
 	@echo "  make rollback        Helm rollback Cap release"
 	@echo "  make uninstall       Remove Cap release and namespace workloads"
 	@echo "  make down            Tear down kind cluster + local registry"
@@ -106,8 +110,20 @@ uninstall:
 airgap-test:
 	@bash scripts/airgap-test.sh
 
-ci-kind-deploy:
-	@CI_KIND=1 ALLOW_NON_THURSDAY=1 USE_INGRESS=1 REGISTRY_HOST=$(REGISTRY_HOST) REGISTRY_INCLUSTER=$(REGISTRY_INCLUSTER) bash scripts/ci-kind-deploy.sh
+package:
+	@bash supply-chain/package-release.sh
+
+verify-proof:
+	@bash scripts/verify-proof.sh
+
+test-smoke smoke-test:
+	@bash scripts/smoke-test.sh
+
+test-e2e:
+	@bash tests/runner.sh e2e
+
+test-all:
+	@bash tests/runner.sh all
 
 destroy:
 	@echo "GKE destroy is a separate step (make -C install/terraform/gke destroy)"

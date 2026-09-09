@@ -29,9 +29,6 @@ spec:
       labels:
         app: cap-web
         halden.cap/component: cap-web
-        {{- if .Values.ci.revision }}
-        ci.revision: {{ .Values.ci.revision | quote }}
-        {{- end }}
     spec:
       securityContext:
         runAsUser: 1001

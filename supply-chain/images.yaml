@@ -1,30 +1,41 @@
-# Image inventory for air-gap relocation (bootstrap host only).
-images:
+# Canonical image list for Cap BYOC releases.
+# After mirror, digests are captured in supply-chain/artifacts/*.digest
+# and merged into dist/image-manifest.yaml by package-release.sh.
+
+registry: localhost:5001
+
+cap:
   - name: cap-web
-    source: ghcr.io/capsoftware/cap-web:latest
-    target: cap/cap-web:latest
-    build: false
-
+    repository: cap/cap-web
+    tag: latest
   - name: media-server
-    source: build
-    target: cap/media-server:latest
-    build:
-      repo: https://github.com/CapSoftware/Cap.git
-      ref: main
-      context: apps/media-server
-      dockerfile: Dockerfile.standalone
-
+    repository: cap/media-server
+    tag: latest
   - name: mysql
-    source: docker.io/library/mysql:8.0
-    target: cap/mysql:8.0
-    build: false
-
+    repository: cap/mysql
+    tag: "8.0"
   - name: minio
-    source: docker.io/minio/minio:latest
-    target: cap/minio:latest
-    build: false
-
+    repository: cap/minio
+    tag: latest
   - name: minio-mc
-    source: docker.io/minio/mc:latest
-    target: cap/minio-mc:latest
-    build: false
+    repository: cap/minio-mc
+    tag: latest
+
+# Addon images (optional — customer may already run Cilium/Kyverno/ingress).
+# See supply-chain/dockerhub/tags.yaml for relay tags when quay/ghcr are blocked.
+addons:
+  cilium:
+    - repository: halden/cilium
+      tag: v1.20.1
+      upstream: quay.io/cilium/cilium:v1.20.1
+    - repository: halden/cilium-operator
+      tag: v1.20.1
+      upstream: quay.io/cilium/operator-generic:v1.20.1
+  kyverno:
+    - repository: halden/kyverno
+      tag: v1.13.2
+      upstream: ghcr.io/kyverno/kyverno:v1.13.2
+  ingress:
+    - repository: halden/ingress-controller
+      tag: v1.15.1
+      upstream: registry.k8s.io/ingress-nginx/controller:v1.15.1

@@ -37,9 +37,6 @@ if [[ "${TARGET}" == "gke" ]]; then
   fi
 else
   VALUES=(-f "${ROOT}/install/helm/cap/values-cage.yaml")
-  if [[ "${CI_KIND:-}" == "1" ]]; then
-    VALUES+=(-f "${ROOT}/install/helm/cap/values-ci.yaml")
-  fi
   if [[ "${USE_INGRESS:-}" == "1" ]]; then
     if [[ "${INGRESS_USE_HOSTS:-}" == "1" ]]; then
       VALUES+=(-f "${ROOT}/install/helm/cap/values-cage-ingress.yaml")

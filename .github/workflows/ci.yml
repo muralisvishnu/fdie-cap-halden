@@ -11,23 +11,38 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Set up Helm
+        uses: azure/setup-helm@v4
+        with:
+          version: v3.16.0
+
       - name: Helm lint
         run: |
           helm lint install/helm/cap -f install/helm/cap/values-cage.yaml
           helm lint install/helm/cap \
             -f install/helm/cap/values-cage.yaml \
-            -f install/helm/cap/values-cage-ingress-localhost.yaml \
-            -f install/helm/cap/values-ci.yaml
+            -f install/helm/cap/values-cage-ingress-localhost.yaml
+
+      - name: Helm package (release artifact)
+        run: helm package install/helm/cap --destination dist/
+
+      - name: Image manifest dry-run
+        run: bash supply-chain/generate-image-manifest.sh dist/image-manifest.yaml
 
       - name: Shellcheck scripts
         run: |
           sudo apt-get update -qq && sudo apt-get install -y shellcheck
-          shellcheck scripts/*.sh environment/scripts/*.sh governance/scripts/*.sh supply-chain/*.sh || true
+          shellcheck scripts/*.sh environment/scripts/*.sh governance/scripts/*.sh supply-chain/*.sh tests/lib/common.sh tests/runner.sh || true
 
       - name: YAML sanity
         run: |
           kubectl apply --dry-run=client -f environment/manifests/proxy/
           kubectl apply --dry-run=client -f environment/manifests/kyverno/
+
+      - name: Test framework syntax
+        run: |
+          bash -n tests/runner.sh
+          for f in tests/smoke/*.sh tests/e2e/*.sh; do bash -n "$f"; done
 
   terraform-validate:
     runs-on: ubuntu-latest

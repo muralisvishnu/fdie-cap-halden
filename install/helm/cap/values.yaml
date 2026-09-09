@@ -2,10 +2,6 @@ global:
   registry: localhost:5001
   imagePullPolicy: IfNotPresent
 
-# Bumped by CI to prove helm upgrade rolls cap-web (see scripts/ci-kind-deploy.sh).
-ci:
-  revision: ""
-
 capWeb:
   image: cap/cap-web
   tag: latest

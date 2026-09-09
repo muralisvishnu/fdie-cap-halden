@@ -1,4 +1,5 @@
 .build/
+dist/
 supply-chain/artifacts/*.spdx.json
 *.log
 !proof/airgap-test.log
