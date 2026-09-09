@@ -37,8 +37,18 @@ bash "${ROOT}/environment/scripts/up.sh"
 log "Mirroring Cap images into ${REGISTRY_HOST}"
 REGISTRY_HOST="${REGISTRY_HOST}" bash "${ROOT}/supply-chain/mirror.sh"
 
-log "Helm install"
-CI_KIND=1 ALLOW_NON_THURSDAY=1 TARGET=cage REGISTRY_HOST="${REGISTRY_INCLUSTER}" \
+log "Mirroring addon images (Cilium, Kyverno, ingress) into private registry"
+REGISTRY="${REGISTRY_HOST}" bash "${ROOT}/supply-chain/mirror-addons-local.sh"
+
+log "Installing Cilium, Kyverno, ingress-nginx from private registry"
+USE_LOCAL_REGISTRY=1 bash "${ROOT}/environment/scripts/install-addons.sh"
+
+log "Verifying policy stack is up"
+${KUBECTL} -n kube-system wait --for=condition=ready pod -l k8s-app=cilium --timeout=180s
+${KUBECTL} -n kyverno wait --for=condition=Available deployment/kyverno-admission-controller --timeout=180s
+
+log "Helm install (ingress + network policies under Kyverno)"
+CI_KIND=1 ALLOW_NON_THURSDAY=1 TARGET=cage USE_INGRESS=1 REGISTRY_HOST="${REGISTRY_INCLUSTER}" \
   bash "${ROOT}/scripts/install.sh"
 
 wait_for_smoke "install"
@@ -49,6 +59,7 @@ ${HELM} upgrade cap "${ROOT}/install/helm/cap" \
   --wait \
   --timeout 25m \
   -f "${ROOT}/install/helm/cap/values-cage.yaml" \
+  -f "${ROOT}/install/helm/cap/values-cage-ingress-localhost.yaml" \
   -f "${ROOT}/install/helm/cap/values-ci.yaml" \
   --set global.registry="${REGISTRY_INCLUSTER}" \
   --set ci.revision=2

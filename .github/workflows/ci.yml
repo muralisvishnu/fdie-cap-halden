@@ -14,7 +14,10 @@ jobs:
       - name: Helm lint
         run: |
           helm lint install/helm/cap -f install/helm/cap/values-cage.yaml
-          helm lint install/helm/cap -f install/helm/cap/values-cage.yaml -f install/helm/cap/values-ci.yaml
+          helm lint install/helm/cap \
+            -f install/helm/cap/values-cage.yaml \
+            -f install/helm/cap/values-cage-ingress-localhost.yaml \
+            -f install/helm/cap/values-ci.yaml
 
       - name: Shellcheck scripts
         run: |

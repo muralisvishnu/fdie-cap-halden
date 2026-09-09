@@ -1,6 +1,6 @@
-# Lighter values for kind CD in GitHub Actions (no Cilium/Kyverno/ingress).
+# CI-only tweaks: smaller requests; policies/ingress come from the other values files.
 networkPolicy:
-  enabled: false
+  allowExternalIngress: true
 
 ci:
   revision: "1"

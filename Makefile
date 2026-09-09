@@ -107,7 +107,7 @@ airgap-test:
 	@bash scripts/airgap-test.sh
 
 ci-kind-deploy:
-	@CI_KIND=1 ALLOW_NON_THURSDAY=1 REGISTRY_HOST=$(REGISTRY_HOST) REGISTRY_INCLUSTER=$(REGISTRY_INCLUSTER) bash scripts/ci-kind-deploy.sh
+	@CI_KIND=1 ALLOW_NON_THURSDAY=1 USE_INGRESS=1 REGISTRY_HOST=$(REGISTRY_HOST) REGISTRY_INCLUSTER=$(REGISTRY_INCLUSTER) bash scripts/ci-kind-deploy.sh
 
 destroy:
 	@echo "GKE destroy is a separate step (make -C install/terraform/gke destroy)"
