@@ -7,8 +7,15 @@ REGISTRY_HOST ?= localhost:5001
 REGISTRY_INCLUSTER ?= localhost:5001
 CAP_NAMESPACE ?= cap
 TARGET ?= cage
+GKE_CONTEXT ?= gke_sre-play_us-west1_infra
+GKE_REGISTRY ?= docker.io/muralisvishnu
 
-.PHONY: help ensure-colima up down mirror attest install install-ingress install-addons restore-egress auth-login uninstall rollback airgap-test preflight status destroy package verify-proof test-smoke test-e2e test-all smoke-test
+.PHONY: help ensure-colima up down mirror mirror-to-registry attest install install-ingress install-gke install-addons restore-egress auth-login uninstall rollback airgap-test preflight preflight-gke status status-gke destroy package verify-proof test-smoke test-e2e test-all smoke-test
+
+_install_deps:
+ifeq ($(TARGET),cage)
+	@$(MAKE) ensure-colima
+endif
 
 help:
 	@echo "Halden Cap BYOC — local-first targets"
@@ -16,8 +23,11 @@ help:
 	@echo "  make ensure-colima   Start Colima if stopped"
 	@echo "  make up              Build the local kind cage"
 	@echo "  make mirror          Mirror Cap images into private registry (bootstrap host)"
-	@echo "  make install         Install Cap into the cage (TARGET=cage)"
+	@echo "  make install         Install Cap (TARGET=cage|gke|byoc)"
 	@echo "  make install-ingress Switch Cap to ingress-nginx (http://127.0.0.1:30080)"
+	@echo "  make install-gke     Install Cap on gke_sre-play infra cluster"
+	@echo "  make mirror-to-registry  Push mirrored Cap images to REGISTRY_HOST"
+	@echo "  make preflight-gke   Preflight for GKE (images in customer registry)"
 	@echo "  make status          Show cage + Cap health"
 	@echo "  make airgap-test     Prove Cap serves with egress proxy fully denied"
 	@echo "  make restore-egress  Restore Squid allowlist after airgap test"
@@ -59,13 +69,26 @@ auth-login:
 	@bash scripts/auth-login.sh
 
 preflight:
-	@bash scripts/preflight.sh
+	@TARGET=$(TARGET) REGISTRY_HOST=$(REGISTRY_HOST) CAP_NAMESPACE=$(CAP_NAMESPACE) bash scripts/preflight.sh
 
-install: ensure-colima
-	@ALLOW_NON_THURSDAY=1 TARGET=$(TARGET) REGISTRY_HOST=$(REGISTRY_INCLUSTER) bash scripts/install.sh
+preflight-gke:
+	@kubectl config use-context $(GKE_CONTEXT)
+	@TARGET=gke PREFLIGHT_PROFILE=gke REGISTRY_HOST=$(GKE_REGISTRY) CAP_NAMESPACE=halden-cap KUBE_CONTEXT=$(GKE_CONTEXT) bash scripts/preflight.sh
 
-install-ingress: ensure-colima
+mirror-to-registry:
+	@REGISTRY_HOST=$(GKE_REGISTRY) bash supply-chain/mirror-to-registry.sh
+
+install: _install_deps
+	@ALLOW_NON_THURSDAY=1 TARGET=$(TARGET) REGISTRY_HOST=$(REGISTRY_INCLUSTER) CAP_NAMESPACE=$(CAP_NAMESPACE) bash scripts/install.sh
+
+install-ingress: _install_deps
 	@ALLOW_NON_THURSDAY=1 TARGET=$(TARGET) REGISTRY_HOST=$(REGISTRY_INCLUSTER) USE_INGRESS=1 bash scripts/install.sh
+
+install-gke:
+	@kubectl config use-context $(GKE_CONTEXT)
+	@ALLOW_NON_THURSDAY=1 TARGET=gke PREFLIGHT_PROFILE=gke CAP_NAMESPACE=halden-cap \
+		REGISTRY_HOST=$(GKE_REGISTRY) KUBE_CONTEXT=$(GKE_CONTEXT) USE_GKE_INFRA_VALUES=1 \
+		bash scripts/install.sh
 
 install-addons: ensure-colima
 	@bash environment/scripts/install-addons.sh
@@ -98,6 +121,9 @@ status:
 	@$(KUBECTL) get nodes -o wide 2>/dev/null || echo "cluster not up"
 	@echo "=== Cap ==="
 	@$(KUBECTL) -n $(CAP_NAMESPACE) get pods,svc,ingress 2>/dev/null || true
+
+status-gke:
+	@kubectl --context $(GKE_CONTEXT) -n halden-cap get pods,svc,ingress 2>/dev/null || true
 
 rollback:
 	@$(HELM) rollback cap -n $(CAP_NAMESPACE) || true

@@ -66,23 +66,23 @@ Open: http://127.0.0.1:30080 — OTP via `make auth-login`.
 
 ## Customer workflow (their infra)
 
-```bash
-# After extracting halden-cap-bundle-*.tar.gz
-export TARGET=byoc
-export PREFLIGHT_PROFILE=byoc
-export REGISTRY_HOST=registry.customer.example/cap
-export PUBLIC_URL=https://cap.customer.example
-export S3_URL=https://s3.cap.customer.example
-export KUBECTL="kubectl --context <their-context>"
+Cap images are **built in customer infra** (`supply-chain/mirror.sh`), not pre-built by vendor.
 
-# 1. Mirror images (customer runs crane/skopeo — see image-manifest.yaml)
-# 2. Patch manifests/kyverno/ for their registry host
-# 3. Apply policies (Cilium, Kyverno, proxy) if not already present
-bash scripts/preflight.sh
-helm upgrade --install cap chart/cap-*.tgz -n cap --create-namespace \
-  -f values-halden.yaml --set global.registry="${REGISTRY_HOST}" --wait
+```bash
+# Build + push on customer build host
+REGISTRY_HOST=registry.customer.example/cap bash supply-chain/mirror.sh
+REGISTRY_HOST=registry.customer.example/cap bash supply-chain/mirror-to-registry.sh
+
+export TARGET=byoc
+export PREFLIGHT_PROFILE=gke
+export REGISTRY_HOST=registry.customer.example/cap
+export KUBE_CONTEXT=<their-context>
+make preflight    # or TARGET=byoc bash scripts/preflight.sh
+TARGET=byoc REGISTRY_HOST=... bash scripts/install.sh
 bash scripts/smoke-test.sh
 ```
+
+GKE infra: `docs/gke-infra-deploy.md` — `make preflight-gke` / `make install-gke`.
 
 Pass = `preflight` and `smoke-test` both exit 0.
 

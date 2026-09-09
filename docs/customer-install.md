@@ -20,9 +20,19 @@ From a release tag (`v0.1.0`) you get `halden-cap-bundle-<version>.tar.gz` conta
 
 Verify checksum: `shasum -a 256 -c halden-cap-bundle-*.tar.gz.sha256`
 
-## 2. Mirror images into your private registry
+## 2. Build and mirror images in **your** infra
 
-Use `image-manifest.yaml` and `supply-chain/mirror.sh` (in the full repo) as patterns. Every Cap pod image must resolve under your registry prefix, e.g. `registry.halden.pharma/cap/cap-web:latest`.
+Cap app images are **not** shipped ready-to-run. Your build environment compiles Cap and mirrors dependencies:
+
+```bash
+# On a build host with Docker + git (customer network)
+REGISTRY_HOST=registry.halden.pharma/cap bash supply-chain/mirror.sh
+REGISTRY_HOST=registry.halden.pharma/cap bash supply-chain/mirror-to-registry.sh
+```
+
+Or use your own crane/skopeo pipeline — `image-manifest.yaml` lists required images.
+
+Every Cap pod image must resolve under your registry prefix, e.g. `registry.halden.pharma/cap/cap-web:latest` (GKE layout uses flat names — see `values-gke.yaml`).
 
 Kyverno policy enforces approved registries only — update `environment/manifests/kyverno/policies.yaml` for your registry host before apply.
 

@@ -1,0 +1,8 @@
+# Overlay for gke_sre-play_us-west1_infra (sre-play). Merge with values-gke.yaml.
+ingress:
+  className: prometheus
+  host: cap-halden.infra.harness.io
+  s3Host: s3-cap-halden.infra.harness.io
+
+publicUrl: https://cap-halden.infra.harness.io
+s3PublicUrl: https://s3-cap-halden.infra.harness.io

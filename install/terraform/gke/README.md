@@ -15,12 +15,19 @@ terraform init
 terraform apply
 ```
 
+## Build + push Cap images (customer infra)
+
+```bash
+make mirror
+docker login
+make mirror-to-registry GKE_REGISTRY=docker.io/muralisvishnu
+make preflight-gke
+```
+
 ## Install Cap
 
 ```bash
-export CAP_NAMESPACE=halden-cap
-export REGISTRY_INCLUSTER=docker.io/muralisvishnu/halden-cage  # or private registry in-cluster
-TARGET=gke ALLOW_NON_THURSDAY=1 make install-ingress
+make install-gke
 ```
 
-Adjust `install/helm/cap/values-gke.yaml` for your registry and ingress hostname.
+See [`docs/gke-infra-deploy.md`](../../docs/gke-infra-deploy.md) for full steps. Adjust `values-gke.yaml` / `values-gke-infra.yaml` for registry and ingress hostnames.

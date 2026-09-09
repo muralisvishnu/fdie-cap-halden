@@ -68,7 +68,7 @@ Tag `v0.1.0` triggers `.github/workflows/release.yml` to attach the bundle to Gi
 |--------|-------------|
 | `cage` | Local kind cluster on Colima (full constraint cage) |
 | `byoc` | Customer cluster (`PREFLIGHT_PROFILE=byoc`) |
-| `gke`  | Shared GKE deploy scaffold |
+| `gke`  | `gke_sre-play_us-west1_infra` — see `docs/gke-infra-deploy.md` |
 
 ## Harness-inspired mechanisms (patterns only)
 
