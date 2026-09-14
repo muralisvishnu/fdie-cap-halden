@@ -36,7 +36,7 @@ Ask the human for missing items. **Do not guess** `REGISTRY_HOST`, `PUBLIC_URL`,
 |------|---------|---------------|
 | 1. Cage | `make ensure-colima && make up` | `kubectl --context kind-halden-cage get nodes` Ready |
 | 2. Mirror Cap | `make mirror` | 5 images in `localhost:5001` (cap-web, media-server, mysql, minio, minio-mc) |
-| 3. Mirror addons | `make mirror-addons-local && USE_LOCAL_REGISTRY=1 make install-addons` **or** `make install-addons-dockerhub` | Cilium, Kyverno, ingress-nginx pods Running |
+| 3. Addons | `make install-addons` | Cilium, Kyverno, ingress-nginx pods Running |
 | 4. Install Cap | `ALLOW_NON_THURSDAY=1 make install-ingress` | `curl -fsS http://127.0.0.1:30080/login` |
 | 5. Smoke | `make test-smoke` | Exit 0 |
 | 6. Proof (optional) | `make airgap-test && make verify-proof` | `proof/airgap-test.log` updated |
@@ -101,14 +101,7 @@ Apply: `kubectl apply -f manifests/kyverno/`
 
 #### 2d. Apply policy stack (if not already present)
 
-Order matters:
-
-1. Cilium chaining config + helm install (see `environment/scripts/install-addons.sh` in full repo)
-2. Kyverno helm + policies
-3. Egress proxy (`manifests/proxy/`) — if customer requires egress control
-4. RBAC (`manifests/rbac/`)
-
-If customer already has equivalent controls, document equivalency — do not duplicate blindly.
+Adapt bundle `manifests/` to the customer CNI (do **not** apply kind Cilium chaining on GKE Dataplane V2). Patch Kyverno registry allowlist to their host. Apply NetworkPolicy / egress / RBAC only after review. If they already have equivalent controls, document equivalency — do not duplicate.
 
 #### 2e. Preflight gate
 
@@ -131,7 +124,7 @@ helm upgrade --install cap chart/cap-*.tgz \
   --wait --timeout 25m
 ```
 
-Or with full repo: `TARGET=gke REGISTRY_HOST=... bash scripts/install.sh`
+Or with full repo: `TARGET=byoc PREFLIGHT_PROFILE=byoc VALUES_FILE=values-halden.yaml REGISTRY_HOST=... bash scripts/install.sh`
 
 #### 2g. Acceptance
 

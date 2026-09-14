@@ -30,6 +30,7 @@ spec:
         app: cap-web
         halden.cap/component: cap-web
     spec:
+      {{- include "cap.imagePullSecrets" . | nindent 6 }}
       securityContext:
         runAsUser: 1001
         runAsNonRoot: true
@@ -39,6 +40,7 @@ spec:
       initContainers:
         - name: wait-for-mysql
           image: {{ include "cap.image" (dict "Values" .Values "image" .Values.mysql.image "tag" .Values.mysql.tag) }}
+          imagePullPolicy: {{ .Values.global.imagePullPolicy }}
           command: ["/bin/sh", "-c"]
           args:
             - |

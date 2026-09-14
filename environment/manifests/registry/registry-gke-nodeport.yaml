@@ -1,0 +1,14 @@
+# GKE: expose registry on a fixed NodePort so kubelet can pull via localhost:30500 (HTTP).
+# Kubelet does not resolve *.svc.cluster.local and defaults to HTTPS without containerd config.
+apiVersion: v1
+kind: Service
+metadata:
+  name: cage-registry
+  namespace: cage-system
+spec:
+  type: NodePort
+  ports:
+    - name: http
+      port: 5000
+      targetPort: 5000
+      nodePort: 30500

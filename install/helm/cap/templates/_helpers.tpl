@@ -2,6 +2,13 @@
 {{- printf "%s/%s:%s" .Values.global.registry .image .tag -}}
 {{- end -}}
 
+{{- define "cap.imagePullSecrets" -}}
+{{- if .Values.global.imagePullSecrets }}
+imagePullSecrets:
+{{- toYaml .Values.global.imagePullSecrets | nindent 0 }}
+{{- end }}
+{{- end -}}
+
 {{- define "cap.podSecurityContext" -}}
 runAsNonRoot: true
 seccompProfile:

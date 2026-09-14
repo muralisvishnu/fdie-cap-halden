@@ -1,0 +1,68 @@
+# One-shot per node: allow kubelet/containerd to pull from the in-cluster HTTP registry.
+# GKE kubelet does not use cluster DNS for image pulls — use ClusterIP in image refs.
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: containerd-insecure-registry
+  namespace: cap-build
+  labels:
+    app: containerd-insecure-registry
+spec:
+  selector:
+    matchLabels:
+      app: containerd-insecure-registry
+  template:
+    metadata:
+      labels:
+        app: containerd-insecure-registry
+    spec:
+      hostPID: true
+      hostNetwork: true
+      tolerations:
+        - operator: Exists
+      initContainers:
+        - name: configure-containerd
+          image: busybox:1.36
+          securityContext:
+            privileged: true
+          env:
+            - name: REGISTRY_ENDPOINT
+              valueFrom:
+                configMapKeyRef:
+                  name: cage-registry-pull
+                  key: endpoint
+          command:
+            - sh
+            - -ec
+            - |
+              HOST="${REGISTRY_ENDPOINT%%/*}"
+              DIR="/host/etc/containerd/certs.d/${HOST}"
+              mkdir -p "${DIR}"
+              cat > "${DIR}/hosts.toml" <<TOML
+              server = "http://${HOST}"
+
+              [host."http://${HOST}"]
+                capabilities = ["pull", "resolve", "push"]
+                skip_verify = true
+              TOML
+              echo "Wrote ${DIR}/hosts.toml"
+              if chroot /host systemctl restart containerd 2>/dev/null; then
+                echo "Restarted containerd"
+              else
+                echo "WARN: could not restart containerd — may need node recycle"
+              fi
+          volumeMounts:
+            - name: containerd-certs
+              mountPath: /host/etc/containerd/certs.d
+      containers:
+        - name: pause
+          image: registry.k8s.io/pause:3.9
+          resources:
+            requests:
+              cpu: 1m
+              memory: 4Mi
+      volumes:
+        - name: containerd-certs
+          hostPath:
+            path: /etc/containerd/certs.d
+            type: DirectoryOrCreate

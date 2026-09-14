@@ -53,7 +53,7 @@ If unclear, ask: *"Are we on the reference cage or installing in customer infras
 
 ```bash
 make ensure-colima && make up && make mirror
-make install-addons-dockerhub   # or install-addons-local
+make install-addons
 ALLOW_NON_THURSDAY=1 make install-ingress
 make test-smoke
 make airgap-test && make verify-proof
@@ -71,15 +71,16 @@ Vendor builds (`make mirror`); customer **imports** pinned images from `image-ma
 ```bash
 # Customer: import vendor images → private registry (crane/skopeo)
 # Then deploy:
-export TARGET=byoc PREFLIGHT_PROFILE=gke
+export TARGET=byoc PREFLIGHT_PROFILE=byoc
 export REGISTRY_HOST=registry.customer.example/cap
 export KUBE_CONTEXT=<their-context>
+export VALUES_FILE=values-halden.yaml
 bash scripts/preflight.sh && TARGET=byoc bash scripts/install.sh && bash scripts/smoke-test.sh
 ```
 
 **Tier 2 (optional):** customer runs `supply-chain/mirror.sh` on their build farm.
 
-**GKE infra demo (vendor builds):** `docs/gke-infra-deploy.md` — `make mirror` → `mirror-to-registry` → `make install-gke`.
+**Vendor dedicated GKE lab:** `docs/gke-install-commands.md` (`TARGET=gke`). Legacy shared infra: `docs/gke-infra-deploy.md` (`make install-gke`).
 
 Pass = `preflight` and `smoke-test` both exit 0.
 
@@ -89,8 +90,9 @@ Pass = `preflight` and `smoke-test` both exit 0.
 
 | Variable | Default | CUSTOMER set to |
 |----------|---------|-----------------|
-| `TARGET` | `cage` | `byoc` or `gke` |
+| `TARGET` | `cage` | **`byoc` only** (never `gke` — that is the vendor lab cluster) |
 | `PREFLIGHT_PROFILE` | `cage` | `byoc` |
+| `VALUES_FILE` | `values-customer.example.yaml` | Path to filled `values-halden.yaml` |
 | `REGISTRY_HOST` | `localhost:5001` | Customer private registry prefix |
 | `PUBLIC_URL` | `http://127.0.0.1:30080` | Customer Cap URL |
 | `S3_URL` | `http://127.0.0.1:30900` | Customer Minio URL |

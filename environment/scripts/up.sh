@@ -2,61 +2,35 @@
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
-CLUSTER_NAME="${CLUSTER_NAME:-halden-cage}"
-REGISTRY_NAME="${REGISTRY_NAME:-cage-registry}"
-REGISTRY_PORT="${REGISTRY_PORT:-5001}"
-KUBECTL="kubectl --context kind-${CLUSTER_NAME}"
+# shellcheck source=environment/scripts/kube-env.sh
+source "${ROOT}/environment/scripts/kube-env.sh"
 
 log() { echo "[cage] $*"; }
 
-ensure_registry() {
-  if ! docker inspect "${REGISTRY_NAME}" >/dev/null 2>&1; then
-    log "Starting local private registry on :${REGISTRY_PORT}"
-    docker run -d --restart=always \
-      -p "${REGISTRY_PORT}:5000" \
-      --name "${REGISTRY_NAME}" \
-      registry:2
-  else
-    docker start "${REGISTRY_NAME}" >/dev/null 2>&1 || true
+apply_registry() {
+  log "Deploying in-cluster private registry (cage-system)"
+  # shellcheck disable=SC2086
+  ${KUBECTL} apply -f "${ROOT}/environment/manifests/registry/registry.yaml"
+  if [[ "${TARGET}" == "gke" ]]; then
+    ${KUBECTL} apply -f "${ROOT}/environment/manifests/registry/registry-gke.yaml"
+    # Replace emptyDir with PVC for image persistence across pod restarts.
+    # shellcheck disable=SC2086
+    ${KUBECTL} patch deployment cage-registry -n cage-system --type=json -p='[
+      {"op":"replace","path":"/spec/template/spec/volumes/0","value":{"name":"data","persistentVolumeClaim":{"claimName":"cage-registry-data"}}}
+    ]' 2>/dev/null || true
+    ${KUBECTL} rollout restart deployment/cage-registry -n cage-system
   fi
-}
-
-create_cluster() {
-  if kind get clusters 2>/dev/null | grep -qx "${CLUSTER_NAME}"; then
-    log "kind cluster ${CLUSTER_NAME} already exists"
-    return
+  bash "${ROOT}/environment/scripts/wait-registry.sh"
+  if [[ "${TARGET}" == "gke" ]]; then
+    bash "${ROOT}/environment/scripts/configure-gke-registry-pull.sh"
   fi
-  log "Creating kind cluster ${CLUSTER_NAME}"
-  kind create cluster --name "${CLUSTER_NAME}" --config "${ROOT}/environment/kind/kind-config.yaml" --wait 300s
+  TARGET="${TARGET}" KUBE_CONTEXT="${KUBE_CONTEXT}" \
+    bash "${ROOT}/environment/scripts/port-forwards.sh" start-registry
 }
 
-connect_registry_to_kind() {
-  if docker inspect -f '{{json .NetworkSettings.Networks}}' "${REGISTRY_NAME}" | grep -q "kind"; then
-    return
-  fi
-  log "Connecting ${REGISTRY_NAME} to kind network"
-  docker network connect kind "${REGISTRY_NAME}" 2>/dev/null || true
-}
-
-preload_images() {
-  log "Preloading infra images (host pull -> kind load)"
-  bash "${ROOT}/environment/scripts/preload-infra.sh"
-}
-
-install_cilium() {
-  if [[ "${INSTALL_ADDONS:-0}" == "1" ]]; then
-    bash "${ROOT}/environment/scripts/install-addons.sh"
-    return
-  fi
-  log "Skipping Cilium/Kyverno/Ingress (run: make install-addons)"
-}
-
-install_ingress() { :; }
-
-install_kyverno() { :; }
-
-apply_manifests() {
-  log "Applying cage manifests"
+apply_cage_manifests() {
+  log "Applying cage manifests (proxy, RBAC, noise, network)"
+  # shellcheck disable=SC2086
   ${KUBECTL} apply -f "${ROOT}/environment/manifests/proxy/"
   ${KUBECTL} apply -f "${ROOT}/environment/manifests/rbac/"
   ${KUBECTL} apply -f "${ROOT}/environment/manifests/noise/"
@@ -65,22 +39,75 @@ apply_manifests() {
 
 wait_ready() {
   log "Waiting for egress-system pods"
-  ${KUBECTL} -n egress-system wait --for=condition=ready pod -l app=egress-proxy --timeout=180s
+  # shellcheck disable=SC2086
+  ${KUBECTL} -n egress-system wait --for=condition=ready pod -l app=egress-proxy --timeout=300s
+}
+
+create_kind_cluster() {
+  if kind get clusters 2>/dev/null | grep -qx "${CLUSTER_NAME}"; then
+    log "kind cluster ${CLUSTER_NAME} already exists"
+    return
+  fi
+  log "Creating kind cluster ${CLUSTER_NAME}"
+  kind create cluster --name "${CLUSTER_NAME}" --config "${ROOT}/environment/kind/kind-config.yaml" --wait 300s
+}
+
+preload_kind_images() {
+  log "Preloading infra images (host pull -> kind load)"
+  bash "${ROOT}/environment/scripts/preload-infra.sh"
+}
+
+up_cage() {
+  create_kind_cluster
+  preload_kind_images
+  apply_registry
+  apply_cage_manifests
+  wait_ready
+  if [[ "${INSTALL_ADDONS:-0}" == "1" ]]; then
+    bash "${ROOT}/environment/scripts/install-addons.sh"
+  else
+    log "Next: make mirror && make install-addons"
+  fi
+  log "Cage is up. Context: ${KUBE_CONTEXT}"
+  log "Colima push:  localhost:5001  →  in-cluster ${REGISTRY_PULL_HOST}"
+  log "Helm pull:    ${REGISTRY_INCLUSTER}/cap/*"
+}
+
+up_gke() {
+  log "Provisioning dedicated GKE cluster (${GKE_CLUSTER_NAME} in ${GKE_PROJECT}/${GKE_REGION})"
+  export KUBE_CONTEXT
+  KUBE_CONTEXT="$(TARGET=gke bash "${ROOT}/environment/scripts/gke-cluster-lifecycle.sh" create)"
+  # shellcheck source=environment/scripts/kube-env.sh
+  source "${ROOT}/environment/scripts/kube-env.sh"
+
+  log "Waiting for nodes"
+  # shellcheck disable=SC2086
+  ${KUBECTL} wait --for=condition=Ready node --all --timeout=600s
+
+  apply_registry
+  apply_cage_manifests
+  wait_ready
+  if [[ "${INSTALL_ADDONS:-0}" == "1" ]]; then
+    bash "${ROOT}/environment/scripts/install-addons.sh"
+  else
+    log "Next: make mirror && make install-addons"
+  fi
+
+  log "GKE cage is up. Context: ${KUBE_CONTEXT}"
+  log "Colima push:  localhost:5001  →  GKE registry ${REGISTRY_PULL_HOST}"
+  log "Helm pull:    ${REGISTRY_INCLUSTER}/cap/*"
+  log "Teardown: make down TARGET=gke"
 }
 
 main() {
-  ensure_registry
-  create_cluster
-  connect_registry_to_kind
-  preload_images
-  install_cilium
-  install_ingress
-  install_kyverno
-  apply_manifests
-  wait_ready
-  log "Cage is up. Context: kind-${CLUSTER_NAME}"
-  log "Private registry (bootstrap): localhost:${REGISTRY_PORT}"
-  log "Private registry (in-cluster): cage-registry:5000"
+  case "${TARGET}" in
+    cage) up_cage ;;
+    gke)  up_gke ;;
+    *)
+      log "Unknown TARGET=${TARGET} for up (use cage or gke)"
+      exit 1
+      ;;
+  esac
 }
 
 main "$@"

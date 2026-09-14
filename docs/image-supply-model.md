@@ -87,7 +87,8 @@ Whoever runs `mirror.sh` performs the build. In Tier 1 that is the **vendor**; i
 | Environment | Tier | Who runs `make mirror` |
 |-------------|------|------------------------|
 | Local kind cage | 1 (vendor) | Vendor laptop → `localhost:5001` |
-| GKE `sre-play` infra | 1 (vendor) | Vendor laptop → `mirror-to-registry` → Docker Hub → GKE |
+| Dedicated GKE lab `halden-cage-gke` | 1 (vendor) | Hub `halden-cage:*` (Mac: skip `make mirror`) |
+| Shared `sre-play` infra (legacy) | 1 (vendor) | `mirror-to-registry` → `make install-gke` |
 | Halden production (handoff) | 1 (default) | Vendor builds; Halden **imports** into private registry |
 | Halden (if policy requires) | 2 | Halden build farm runs `mirror.sh` |
 
@@ -96,6 +97,7 @@ Whoever runs `mirror.sh` performs the build. In Tier 1 that is the **vendor**; i
 ## Related docs
 
 - [Customer install](customer-install.md) — Tier 1 import + deploy
-- [GKE infra deploy](gke-infra-deploy.md) — Tier 1 on `gke_sre-play_us-west1_infra`
+- [Dedicated GKE lab](gke-install-commands.md) — vendor `TARGET=gke` (`halden-cage-gke`)
+- [Legacy shared GKE](gke-infra-deploy.md) — `make install-gke` on `gke_sre-play_us-west1_infra`
 - [Release process](release.md) — packaging the bundle
 - [Install contract](install-contract.md) — preflight / smoke gates

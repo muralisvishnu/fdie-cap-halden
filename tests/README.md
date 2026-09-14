@@ -1,22 +1,31 @@
 # Halden Cap test framework
 
-Lightweight bash smoke/e2e tests for FDIE BYOC proof — no cluster deploy in CI.
+Lightweight bash smoke/e2e tests. Same Make targets for kind (`TARGET=cage`) and dedicated GKE (`TARGET=gke`).
 
 ## Suites
 
 | Suite | When to run | What it checks |
 |-------|-------------|----------------|
-| `smoke` | After customer `helm install` in their lab | preflight, `/login`, pod rollouts, Minio health |
-| `e2e` | Reference cage only | air-gap egress deny + proof artifacts |
+| `smoke` | After `make install-ingress` | preflight, `/login`, pod rollouts, Minio health |
+| `e2e` | After smoke, if `egress-system` exists | air-gap egress deny + proof artifacts |
 
-## Usage (local reference cage)
+## Usage
 
 ```bash
-make install-ingress
-make test-smoke          # smoke suite
-make test-e2e            # includes airgap (mutates egress proxy, then restores)
-make test-all
+# kind
+make test-smoke TARGET=cage
+make test-e2e TARGET=cage
+make airgap-test TARGET=cage
+
+# dedicated GKE (any cluster: set context / terraform outputs)
+export TARGET=gke GKE_PROJECT=sre-play GKE_REGION=us-west1
+# optional: export KUBE_CONTEXT=gke_PROJECT_REGION_CLUSTER
+make test-smoke TARGET=gke
+make test-e2e TARGET=gke
+make airgap-test TARGET=gke
 ```
+
+kind uses hostPorts `30080` / `30900`. GKE uses `kubectl port-forward` to a free laptop port (Minio avoids `30900`, which Colima often binds).
 
 ## Usage (customer lab)
 
@@ -29,7 +38,6 @@ export PREFLIGHT_PROFILE=byoc
 
 bash scripts/preflight.sh
 bash scripts/smoke-test.sh
-# Optional e2e only if customer replicated egress-system cage
 ```
 
 ## Environment variables
@@ -37,10 +45,11 @@ bash scripts/smoke-test.sh
 | Variable | Default | Purpose |
 |----------|---------|---------|
 | `TARGET` | `cage` | `cage`, `byoc`, or `gke` — selects kubectl context |
-| `PUBLIC_URL` | `http://127.0.0.1:30080` | Cap UI base URL |
-| `S3_URL` | `http://127.0.0.1:30900` | Minio health endpoint |
-| `REGISTRY_HOST` | `localhost:5001` | Private registry for image preflight |
-| `PREFLIGHT_PROFILE` | `cage` | `cage` (full cage) or `byoc` (customer cluster) |
+| `KUBE_CONTEXT` | kind / terraform / `gke_$PROJECT_$REGION_$CLUSTER` | Override cluster |
+| `PUBLIC_URL` | auto (port-forward or kind hostPort) | Cap UI base URL |
+| `S3_URL` | auto | Minio health endpoint |
+| `REGISTRY_HOST` | `localhost:5001` | Private registry for kind preflight |
+| `PREFLIGHT_PROFILE` | `cage` | `cage` (full cage) or `byoc` |
 | `CAP_NAMESPACE` | `cap` | Cap namespace |
 
 ## Adding tests

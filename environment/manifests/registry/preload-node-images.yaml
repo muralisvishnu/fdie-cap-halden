@@ -1,0 +1,85 @@
+# Preload mirrored images onto each GKE node via host containerd (--plain-http).
+# Belt-and-suspenders when containerd hosts.toml is not reloaded on COS nodes.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: cage-registry-preload
+  namespace: cap-build
+data:
+  images.txt: |
+    localhost:30500/halden/cilium:v1.20.1
+    localhost:30500/halden/cilium-operator:v1.20.1
+    localhost:30500/halden/cilium-envoy:v1.20.1
+    localhost:30500/halden/kyvernopre:v1.13.2
+    localhost:30500/halden/kyverno:v1.13.2
+    localhost:30500/halden/kyverno-background:v1.13.2
+    localhost:30500/halden/kyverno-cleanup:v1.13.2
+    localhost:30500/halden/kyverno-reports:v1.13.2
+    localhost:30500/halden/ingress-controller:v1.15.1
+    localhost:30500/halden/ingress-certgen:v1.6.9
+---
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: preload-registry-images
+  namespace: cap-build
+  labels:
+    app: preload-registry-images
+spec:
+  selector:
+    matchLabels:
+      app: preload-registry-images
+  template:
+    metadata:
+      labels:
+        app: preload-registry-images
+    spec:
+      hostPID: true
+      hostNetwork: true
+      tolerations:
+        - operator: Exists
+      initContainers:
+        - name: preload
+          image: alpine:3.20
+          securityContext:
+            privileged: true
+          command:
+            - sh
+            - -ec
+            - |
+              CTR="$(command -v ctr 2>/dev/null || true)"
+              if [[ -z "${CTR}" ]]; then
+                for c in /host/usr/bin/ctr /host/home/kubernetes/bin/ctr; do
+                  [[ -x "${c}" ]] && CTR="${c}" && break
+                done
+              fi
+              if [[ -z "${CTR}" ]]; then
+                echo "FAIL: ctr not found on node"
+                exit 1
+              fi
+              SOCK="/host/run/containerd/containerd.sock"
+              while IFS= read -r img; do
+                [[ -z "${img}" ]] && continue
+                echo "Preloading ${img}"
+                "${CTR}" --address "${SOCK}" -n k8s.io images pull --plain-http "${img}" \
+                  || echo "WARN: preload failed for ${img}"
+              done < /config/images.txt
+          volumeMounts:
+            - name: config
+              mountPath: /config
+            - name: host
+              mountPath: /host
+      containers:
+        - name: pause
+          image: registry.k8s.io/pause:3.9
+          resources:
+            requests:
+              cpu: 1m
+              memory: 4Mi
+      volumes:
+        - name: config
+          configMap:
+            name: cage-registry-preload
+        - name: host
+          hostPath:
+            path: /

@@ -27,6 +27,7 @@ spec:
         app: cap-mysql
         halden.cap/component: mysql
     spec:
+      {{- include "cap.imagePullSecrets" . | nindent 6 }}
       securityContext:
         runAsUser: 999
         runAsNonRoot: true

@@ -12,7 +12,7 @@
 make ensure-colima
 make up                    # kind + registry + proxy + RBAC
 make mirror                # build/push Cap images to localhost:5001
-make install-addons-dockerhub   # Cilium, Kyverno, ingress (after Docker Hub mirror on GKE)
+make install-addons        # Cilium, Kyverno, ingress-nginx
 make install-ingress       # Cap via ingress at http://127.0.0.1:30080
 ```
 
@@ -60,17 +60,11 @@ Artifacts: `proof/airgap-test.log`, `proof/airgap-response.html`
 bash scripts/restore-egress-proxy.sh
 ```
 
-## GKE deploy (sre-play)
+## Other clusters (not this runbook)
 
-```bash
-cd install/terraform/gke
-terraform init && terraform apply
-kubectl config use-context gke_sre-play_us-west1_infra
-make mirror-gke-dockerhub
-TARGET=gke ALLOW_NON_THURSDAY=1 make install
-```
-
-See `install/terraform/gke/README.md`.
+- Dedicated vendor GKE lab: [`docs/gke-install-commands.md`](gke-install-commands.md) (`TARGET=gke`).
+- Legacy shared infra: [`docs/gke-infra-deploy.md`](gke-infra-deploy.md) (`make install-gke`).
+- Customer BYOC: [`docs/customer-install.md`](customer-install.md) (`TARGET=byoc`).
 
 ## Tear down
 

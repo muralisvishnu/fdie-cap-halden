@@ -107,7 +107,7 @@ cp values-customer.example.yaml values-halden.yaml
 # edit registry, URLs, secrets
 
 export TARGET=byoc
-export PREFLIGHT_PROFILE=gke
+export PREFLIGHT_PROFILE=byoc
 export REGISTRY_HOST=registry.halden.pharma/cap
 export KUBE_CONTEXT=<halden-lab-context>
 

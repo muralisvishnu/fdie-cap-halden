@@ -1,36 +1,14 @@
 #!/usr/bin/env bash
-# Install contract preflight — cage (kind), GKE, or customer BYOC.
+# Install contract preflight — cage (kind), dedicated gke, or customer BYOC.
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-TARGET="${TARGET:-cage}"
-CLUSTER_NAME="${CLUSTER_NAME:-halden-cage}"
-CAP_NAMESPACE="${CAP_NAMESPACE:-cap}"
-
-# Default profile + namespace per target
-case "${TARGET}" in
-  gke|byoc)
-    PREFLIGHT_PROFILE="${PREFLIGHT_PROFILE:-gke}"
-    CAP_NAMESPACE="${CAP_NAMESPACE:-halden-cap}"
-    REGISTRY_HOST="${REGISTRY_HOST:-docker.io/muralisvishnu}"
-    ;;
-  *)
-    PREFLIGHT_PROFILE="${PREFLIGHT_PROFILE:-cage}"
-    REGISTRY_HOST="${REGISTRY_HOST:-localhost:5001}"
-    ;;
-esac
-
-if [[ -n "${KUBE_CONTEXT:-}" ]]; then
-  KUBECTL="kubectl --context ${KUBE_CONTEXT}"
-elif [[ "${TARGET}" == "gke" || "${TARGET}" == "byoc" ]]; then
-  KUBECTL="${KUBECTL:-kubectl}"
-else
-  KUBECTL="${KUBECTL:-kubectl --context kind-${CLUSTER_NAME}}"
-fi
+# shellcheck source=environment/scripts/kube-env.sh
+source "${ROOT}/environment/scripts/kube-env.sh"
 
 log() { echo "[preflight] $*"; }
 
-# Cage: cap/cap-web under localhost:5001. GKE/BYOC: cap-web under registry prefix.
+# Push/mirror host uses localhost:5001 on both kind and gke (port-forward on gke).
 CAGE_IMAGE_REPOS=(cap/cap-web cap/media-server cap/mysql cap/minio cap/minio-mc)
 CAGE_IMAGE_TAGS=(latest latest 8.0 latest latest)
 REMOTE_IMAGE_REPOS=(cap-web media-server mysql minio minio-mc)
@@ -49,7 +27,7 @@ registry_type() {
 }
 
 check_cluster() {
-  case "${PREFLIGHT_PROFILE}" in
+  case "${TARGET}" in
     cage)
       if ! kind get clusters 2>/dev/null | grep -qx "${CLUSTER_NAME}"; then
         log "FAIL: kind cluster ${CLUSTER_NAME} not found"
@@ -58,6 +36,7 @@ check_cluster() {
       ;;
     gke|byoc)
       log "Cluster check (${TARGET}) — context: ${KUBE_CONTEXT:-current}"
+      # shellcheck disable=SC2086
       if ! ${KUBECTL} cluster-info >/dev/null 2>&1; then
         log "FAIL: kubectl cannot reach cluster"
         exit 1
@@ -66,7 +45,18 @@ check_cluster() {
   esac
 }
 
+# GKE Cap pulls docker.io/muralisvishnu/halden-cage:* (HTTPS). Do not require
+# localhost:5001/cap/* — kubelet cannot use that path, and another cluster
+# will not have laptop extraPortMappings.
+gke_uses_hub() {
+  [[ "${TARGET}" == "gke" ]]
+}
+
 check_registry() {
+  if gke_uses_hub; then
+    log "GKE: skipping localhost:5001 catalog (Cap/addons pull from Docker Hub)"
+    return 0
+  fi
   local kind
   kind="$(registry_type)"
   log "Checking registry (${kind}) at ${REGISTRY_HOST}"
@@ -75,6 +65,11 @@ check_registry() {
     local)
       if ! curl -fsS "http://${REGISTRY_HOST}/v2/" >/dev/null 2>&1; then
         log "FAIL: bootstrap registry not reachable at ${REGISTRY_HOST}"
+        if [[ "${TARGET}" == "gke" ]]; then
+          log "  Hint: run 'make up TARGET=gke' (starts registry port-forward)"
+        else
+          log "  Hint: run 'make up'"
+        fi
         exit 1
       fi
       ;;
@@ -123,11 +118,33 @@ image_exists_remote() {
   return 1
 }
 
+check_gke_hub_images() {
+  local repo="${DOCKERHUB_ADDON_REPO:-docker.io/muralisvishnu/halden-cage}"
+  local tag
+  log "Checking Cap images on Docker Hub (${repo})"
+  for tag in cap-web-latest media-server-latest mysql-8.0 minio-latest minio-mc-latest; do
+    if image_exists_remote "${repo}:${tag}"; then
+      log "  OK ${repo}:${tag}"
+    else
+      log "WARN: cannot verify ${repo}:${tag} (crane/docker missing or private); continuing"
+    fi
+  done
+}
+
 check_images() {
+  if gke_uses_hub; then
+    # shellcheck disable=SC2086
+    if ${KUBECTL} -n "${CAP_NAMESPACE}" get deployment cap-web >/dev/null 2>&1; then
+      log "GKE: Cap already installed — skip image catalog"
+      return 0
+    fi
+    check_gke_hub_images
+    return 0
+  fi
   local repos tags i repo tag ref kind
   kind="$(registry_type)"
 
-  if [[ "${PREFLIGHT_PROFILE}" == "cage" ]]; then
+  if [[ "${PREFLIGHT_PROFILE}" == "cage" ]] || [[ "${TARGET}" == "cage" ]]; then
     repos=("${CAGE_IMAGE_REPOS[@]}")
     tags=("${CAGE_IMAGE_TAGS[@]}")
   else
@@ -150,7 +167,6 @@ check_images() {
       if ! image_exists_remote "${ref}"; then
         log "FAIL: missing ${ref}"
         log "  Build/mirror in your infra: REGISTRY_HOST=${REGISTRY_HOST} bash supply-chain/mirror.sh"
-        log "  Then tag/push to ${REGISTRY_HOST}/<image>:<tag> (see install/helm/cap/values-gke.yaml)"
         exit 1
       fi
     fi
@@ -163,6 +179,7 @@ check_cage_policies() {
     log "Skipping cage egress-proxy check (${PREFLIGHT_PROFILE})"
     return
   fi
+  # shellcheck disable=SC2086
   if ! ${KUBECTL} -n egress-system get svc egress-proxy >/dev/null 2>&1; then
     log "FAIL: egress proxy missing (run make up)"
     exit 1
@@ -170,6 +187,7 @@ check_cage_policies() {
 }
 
 check_cap_installed() {
+  # shellcheck disable=SC2086
   if ${KUBECTL} -n "${CAP_NAMESPACE}" get deployment cap-web >/dev/null 2>&1; then
     log "Cap release detected in ${CAP_NAMESPACE}"
   else
@@ -178,7 +196,7 @@ check_cap_installed() {
 }
 
 main() {
-  export TARGET REGISTRY_HOST CAP_NAMESPACE PREFLIGHT_PROFILE
+  export TARGET REGISTRY_HOST REGISTRY_INCLUSTER CAP_NAMESPACE PREFLIGHT_PROFILE KUBE_CONTEXT
   check_cluster
   check_registry
   check_images
@@ -188,7 +206,19 @@ main() {
 
   if [[ "${PREFLIGHT_PROFILE}" == "cage" ]]; then
     log "Deploying outbound-only runner (post-mirror)"
-    ${KUBECTL} apply -f "${ROOT}/environment/manifests/runner/"
+    # shellcheck disable=SC2086
+    if [[ "${TARGET}" == "gke" ]]; then
+      sed "s|cage-registry.cage-system.svc.cluster.local:5000/cap/minio-mc:latest|docker.io/muralisvishnu/halden-cage:minio-mc-latest|g" \
+        "${ROOT}/environment/manifests/runner/outbound-runner.yaml" \
+        | sed "s|http://cage-registry.cage-system.svc.cluster.local:5000/v2/|http://cage-registry.cage-system.svc.cluster.local:5000/v2/|g" \
+        | ${KUBECTL} apply -f -
+      ${KUBECTL} -n "${CAP_NAMESPACE}" patch deployment outbound-runner --type=json \
+        -p '[{"op":"add","path":"/spec/template/spec/imagePullSecrets","value":[{"name":"dockerhub-creds"}]}]' 2>/dev/null \
+        || ${KUBECTL} -n "${CAP_NAMESPACE}" patch deployment outbound-runner --type=merge \
+        -p '{"spec":{"template":{"spec":{"imagePullSecrets":[{"name":"dockerhub-creds"}]}}}}'
+    else
+      ${KUBECTL} apply -f "${ROOT}/environment/manifests/runner/"
+    fi
   fi
 }
 

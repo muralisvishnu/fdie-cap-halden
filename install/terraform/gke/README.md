@@ -1,13 +1,6 @@
-# GKE deploy — sre-play
+# Legacy: namespace on shared GKE `gke_sre-play_us-west1_infra`
 
-Provisions the **namespace + quota** on shared GKE. Cap itself is installed via Helm (`TARGET=gke`).
-
-## Prerequisites
-
-- `kubectl` context: `gke_sre-play_us-west1_infra`
-- Images on Docker Hub: `make mirror-gke-dockerhub`
-
-## Apply
+Not the dedicated lab cluster (`install/terraform/gke-cluster/`). Not the customer SOP.
 
 ```bash
 cd install/terraform/gke
@@ -15,19 +8,4 @@ terraform init
 terraform apply
 ```
 
-## Build + push Cap images (Tier 1 — vendor on laptop)
-
-```bash
-make mirror
-docker login
-make mirror-to-registry GKE_REGISTRY=docker.io/muralisvishnu
-make preflight-gke
-```
-
-## Install Cap
-
-```bash
-make install-gke
-```
-
-See [`docs/gke-infra-deploy.md`](../../docs/gke-infra-deploy.md) for full steps. Adjust `values-gke.yaml` / `values-gke-infra.yaml` for registry and ingress hostnames.
+Cap install: `make install-gke` (Helm `TARGET=byoc` + `USE_GKE_INFRA_VALUES=1`). Details: [`docs/gke-infra-deploy.md`](../../../docs/gke-infra-deploy.md).

@@ -19,8 +19,9 @@ data:
     http_access deny CONNECT !SSL_ports
     http_access allow allowed_domains
     http_access deny all
-    access_log stdio:/dev/stdout
-    cache_log stdio:/dev/stderr
+    # stdio:/dev/stdout fails on GKE (squid runs as non-root 'proxy' user)
+    access_log none
+    cache_log /var/log/squid/cache.log
     cache deny all
     dns_v4_first on
 ---

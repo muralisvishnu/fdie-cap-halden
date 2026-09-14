@@ -1,6 +1,7 @@
 global:
   registry: localhost:5001
   imagePullPolicy: IfNotPresent
+  imagePullSecrets: []
 
 capWeb:
   image: cap/cap-web

@@ -43,7 +43,7 @@ Run on your local kind cage to refresh proof and digests:
 make ensure-colima
 make up
 make mirror
-make install-addons-dockerhub   # or install-addons-local
+make install-addons
 make install-ingress
 
 make test-smoke                 # smoke suite

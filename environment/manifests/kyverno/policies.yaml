@@ -17,7 +17,7 @@ spec:
         foreach:
           - list: request.object.spec.containers
             pattern:
-              image: "localhost:5001/* | docker.io/muralisvishnu/halden-cage:*"
+              image: "localhost:5001/* | localhost:30500/* | cage-registry.cage-system.svc.cluster.local:5000/* | *:5000/cap/* | *:5000/halden/* | docker.io/muralisvishnu/halden-cage:* | muralisvishnu/halden-cage:*"
     - name: only-private-registry-initcontainers
       match:
         any:
@@ -34,7 +34,7 @@ spec:
         foreach:
           - list: request.object.spec.initContainers
             pattern:
-              image: "localhost:5001/* | docker.io/muralisvishnu/halden-cage:*"
+              image: "localhost:5001/* | localhost:30500/* | cage-registry.cage-system.svc.cluster.local:5000/* | *:5000/cap/* | *:5000/halden/* | docker.io/muralisvishnu/halden-cage:* | muralisvishnu/halden-cage:*"
 ---
 apiVersion: kyverno.io/v1
 kind: ClusterPolicy

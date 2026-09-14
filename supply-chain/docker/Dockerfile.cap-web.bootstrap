@@ -1,20 +1,25 @@
 # Bootstrap wrapper for building cap-web behind a TLS-intercepting proxy.
-# Does not modify Cap application source; only adjusts build-time TLS for the bootstrap host.
+# Matches upstream Cap (bun) but without BuildKit cache mounts (Kaniko-compatible).
+FROM oven/bun:1.4.0-alpine AS bun
+
 FROM node:24-alpine AS base
-RUN corepack enable
 
 FROM base AS builder
 WORKDIR /app
+COPY --from=bun /usr/local/bin/bun /usr/local/bin/bun
 COPY . .
 
-RUN corepack enable pnpm
-RUN --mount=type=cache,id=pnpm,target=/root/.local/share/pnpm/store pnpm i --frozen-lockfile
+RUN bun install --frozen-lockfile
 
 ARG NEXT_PUBLIC_DOCKER_BUILD=true
 ENV NEXT_PUBLIC_WEB_URL=http://localhost:3000
 ENV NODE_TLS_REJECT_UNAUTHORIZED=0
+ARG NODE_MAX_OLD_SPACE_SIZE=6144
+ENV NODE_OPTIONS="--max-old-space-size=${NODE_MAX_OLD_SPACE_SIZE}"
+ENV TURBO_CONCURRENCY=1
+ENV NEXT_TELEMETRY_DISABLED=1
 
-RUN pnpm run build:web
+RUN bun run build:web
 
 FROM base AS runner
 WORKDIR /app

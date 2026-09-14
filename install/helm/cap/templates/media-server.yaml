@@ -26,6 +26,7 @@ spec:
         app: cap-media-server
         halden.cap/component: media-server
     spec:
+      {{- include "cap.imagePullSecrets" . | nindent 6 }}
       securityContext:
         runAsUser: 1000
         runAsNonRoot: true

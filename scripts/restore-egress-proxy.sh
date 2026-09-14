@@ -1,14 +1,16 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-CLUSTER_NAME="${CLUSTER_NAME:-halden-cage}"
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-KUBECTL="kubectl --context kind-${CLUSTER_NAME}"
+# shellcheck source=environment/scripts/kube-env.sh
+source "${ROOT}/environment/scripts/kube-env.sh"
 
-log() { echo "[egress-restore] $*"; }
+log() { echo "[egress] $*"; }
 
-log "Restoring baseline Squid allowlist"
-${KUBECTL} apply -f "${ROOT}/environment/manifests/proxy/egress-proxy.yaml"
+log "Restoring egress proxy allowlist"
+# shellcheck disable=SC2086
+${KUBECTL} apply -f "${ROOT}/environment/manifests/proxy/"
+# shellcheck disable=SC2086
 ${KUBECTL} -n egress-system rollout restart deployment/egress-proxy
+# shellcheck disable=SC2086
 ${KUBECTL} -n egress-system rollout status deployment/egress-proxy --timeout=120s
-log "Egress proxy restored"

@@ -1,31 +1,36 @@
 # Customer install guide — Halden Cap BYOC
 
-This is the **customer-facing** half of the install contract. For what “contract” means and who does what, see [install-contract.md](install-contract.md). For how the vendor cuts a release, see [release.md](release.md). **AI assistants:** start at [AGENTS.md](../AGENTS.md) or [ai-protocol.md](ai-protocol.md) Protocol 2.
+This is the **only** install SOP for Halden (or any BYOC customer). You install into **your** Kubernetes cluster.
 
-**Summary:** Vendor ships a qualified build (Tier 1, default); Halden **imports** pinned images into your private registry, applies policies, installs the Helm chart, and runs smoke tests. If `preflight.sh` and `smoke-test.sh` both exit 0, the install meets spec.
+Vendor lab commands (`make up`, `make mirror`, `TARGET=gke`, dedicated `halden-cage-gke`) are **not** for you. Those live in the repo README and [`gke-install-commands.md`](gke-install-commands.md).
 
-Image supply tiers: [image-supply-model.md](image-supply-model.md).  
-Air-gap delivery (SFTP/USB/DMZ): [customer-image-delivery.md](customer-image-delivery.md).
+What “contract” means: [`install-contract.md`](install-contract.md). Air-gap image drop: [`customer-image-delivery.md`](customer-image-delivery.md). Image tiers: [`image-supply-model.md`](image-supply-model.md).
+
+**Done means:** `scripts/preflight.sh` and `scripts/smoke-test.sh` both exit **0** in your lab.
+
+## How to use this document
+
+Work **top to bottom**. Do not Helm-install until preflight passes. Do not apply kind-cage Cilium chaining on GKE Dataplane V2. Patch Kyverno’s registry allowlist **before** you apply policies, or admission will reject your images.
 
 ## 1. Receive the bundle
 
-From a release tag (`v0.1.0`) you get `halden-cap-bundle-<version>.tar.gz` containing:
+From a release tag (`v0.1.0`) you get `halden-cap-bundle-<version>.tar.gz`:
 
 | Artifact | Purpose |
 |----------|---------|
 | `chart/cap-<version>.tgz` | Helm chart |
-| `image-manifest.yaml` | Image list + digests (after vendor mirror) |
+| `image-manifest.yaml` | Image list + digests |
 | `values-customer.example.yaml` | Required values template |
-| `manifests/` | Kyverno, Cilium, egress proxy, RBAC |
+| `manifests/` | Example Kyverno, Cilium, egress proxy, RBAC — **adapt** |
 | `scripts/install.sh`, `preflight.sh`, `smoke-test.sh` | Install contract |
-| `tests/` | Smoke / e2e framework for your lab |
-| `proof/` | Reference air-gap proof + security checklist |
+| `tests/` | Smoke / e2e for your lab |
+| `proof/` | Vendor **reference** proof — not your prod evidence |
 
-Verify checksum: `shasum -a 256 -c halden-cap-bundle-*.tar.gz.sha256`
+Verify: `shasum -a 256 -c halden-cap-bundle-*.tar.gz.sha256`
 
-## 2. Images — Tier 1 (default): import vendor-qualified build
+## 2. Images — Tier 1 (default)
 
-Vendor ships **`halden-cap-images-<ver>.tar.gz`** separately from the bundle (no internet required). See [customer-image-delivery.md](customer-image-delivery.md).
+Vendor ships **`halden-cap-images-<ver>.tar.gz`** separately (see [customer-image-delivery.md](customer-image-delivery.md)).
 
 ```bash
 tar -xzf halden-cap-images-0.1.0.tar.gz
@@ -36,59 +41,87 @@ export REGISTRY_HOST=registry.halden.pharma/cap
 bash import-release-images.sh .
 ```
 
-Alternative (connected lab only): `crane copy` from vendor registry using digests in `image-manifest.yaml`.
+Connected lab alternative: `crane copy` from the vendor registry using digests in `image-manifest.yaml`.
 
-Record digests in your change ticket. Run `bash scripts/preflight.sh` after import.
+Record digests in your change ticket.
 
-### Tier 2 (optional): customer build
+### Image names
 
-Only if Halden policy requires images built on Halden-controlled builders:
+Vendor cage uses `cap/cap-web:latest` on an in-cluster registry. Your Helm values use **flat** names under `global.registry` (see `values-customer.example.yaml`): `registry.halden.pharma/cap/cap-web:latest`, and so on. Import scripts must match those names.
+
+### Tier 2 (optional)
+
+Only if policy requires images built on Halden builders:
 
 ```bash
 REGISTRY_HOST=registry.halden.pharma/cap bash supply-chain/mirror.sh
 ```
 
-Vendor provides Dockerfiles and the same install contract; digest parity is Halden's responsibility.
+Digest parity is then Halden’s responsibility.
 
-Every Cap pod image must resolve under your registry prefix (flat names per `values-gke.yaml`, or `cap/` prefix per cage layout).
-
-Kyverno policy enforces approved registries only — update `environment/manifests/kyverno/policies.yaml` for your registry host before apply.
-
-Optional: generate SBOM + cosign signatures (`make attest`) and record digests in your change ticket.
-
-## 3. Required Helm values
+## 3. Helm values
 
 Copy `values-customer.example.yaml` → `values-halden.yaml` and set:
 
 | Value | Required | Notes |
 |-------|----------|-------|
-| `global.registry` | Yes | Private registry host/path prefix |
+| `global.registry` | Yes | Private registry prefix (must match imported images) |
 | `publicUrl` | Yes | Cap UI URL (desktop app uses this) |
 | `s3PublicUrl` | Yes | Minio/S3 API URL |
-| `secrets.*` | Yes | Rotate all defaults; use External Secrets in prod |
-| `ingress.className` | If ingress enabled | Match your ingress controller |
+| `secrets.*` | Yes | Rotate all defaults; External Secrets in prod |
+| `ingress.className` | If ingress enabled | Match **your** ingress controller |
 
-Install:
+## 4. Policies (adapt — do not copy kind as-is)
+
+| Do | Do not |
+|----|--------|
+| Add **your** registry host to Kyverno `halden-private-registry-only` (replace `localhost:5001` / vendor Hub allowlist) | Apply kind Cilium **chaining** manifests on a cluster that already runs GKE Dataplane V2 / vendor Cilium |
+| Apply NetworkPolicy / egress examples after reviewing CIDRs and namespaces | Point pods at `cage-registry.cage-system:5000` |
+| Align freeze-guard with **your** change window, or skip it | Rely on Thursday-only `freeze-guard.sh` unless that is your process |
+
+Kyverno example: allow `registry.halden.pharma/cap/*` (and your ingress/Kyverno images if those charts pull from the same cluster).
+
+## 5. Preflight + install
+
+Same command block lives in the repo [`README.md`](../README.md) under **Customer: install Cap (`TARGET=byoc`)**.
+
+Always `TARGET=byoc`. Switch kubectl to **your** cluster first (`KUBE_CONTEXT` is not applied automatically).
+
+Thursday freeze: `scripts/install.sh` calls `freeze-guard.sh`. If your window is not Thursday, set `ALLOW_NON_THURSDAY=1` or disable that guard in your fork.
 
 ```bash
 export TARGET=byoc
+export PREFLIGHT_PROFILE=byoc
 export REGISTRY_HOST=registry.halden.pharma/cap
-export KUBECTL="kubectl --context your-cluster"
+export KUBE_CONTEXT=your-cluster-context
+export VALUES_FILE="$(pwd)/values-halden.yaml"
+# export ALLOW_NON_THURSDAY=1   # if not installing on Thursday
 
-bash scripts/preflight.sh   # registry + images only (PREFLIGHT_PROFILE=byoc)
+bash scripts/preflight.sh
+```
 
+Then either Helm directly:
+
+```bash
 helm upgrade --install cap chart/cap-0.1.0.tgz \
-  --namespace cap --create-namespace \
+  --namespace halden-cap --create-namespace \
   -f values-halden.yaml \
   --set global.registry="${REGISTRY_HOST}" \
   --wait --timeout 25m
 ```
 
-Or use `scripts/install.sh` with `TARGET=gke` and your values file paths.
+Or the contract wrapper (same values file):
 
-## 4. Lab smoke test (customer)
+```bash
+TARGET=byoc PREFLIGHT_PROFILE=byoc \
+  REGISTRY_HOST="${REGISTRY_HOST}" KUBE_CONTEXT="${KUBE_CONTEXT}" \
+  VALUES_FILE="${VALUES_FILE}" \
+  bash scripts/install.sh
+```
 
-After install:
+Do **not** set `TARGET=gke`. That target is the vendor dedicated GKE lab (Docker Hub `halden-cage:*` tags).
+
+## 6. Smoke test
 
 ```bash
 export TARGET=byoc
@@ -100,28 +133,23 @@ export REGISTRY_HOST=registry.halden.pharma/cap
 bash scripts/smoke-test.sh
 ```
 
-This runs `preflight` + smoke suite: `/login` HTTP 200, pod rollouts, Minio health.
+Expect `/login` HTTP 200, Cap pods ready, Minio healthy.
 
-## 5. Proof artifacts (vendor reference)
+## 7. Proof artifacts
 
-The bundle includes **reference** proof from the vendor cage (`proof/airgap-test.log`, `security-checklist.md`). These demonstrate the pattern works — they do not prove your production cluster.
-
-Re-run in your lab if required:
+Bundle `proof/` is **vendor cage** evidence. Re-run in your lab if auditors need your cluster:
 
 ```bash
 bash scripts/verify-proof.sh
 ```
 
-## 6. Change control
+## 8. Support checklist
 
-`governance/scripts/freeze-guard.sh` blocks installs outside Thursday unless `ALLOW_NON_THURSDAY=1`. Adapt or remove for your change window.
-
-## 7. Support checklist
-
-- [ ] Images mirrored to private registry
-- [ ] Kyverno / Cilium / egress policies applied (or equivalent)
-- [ ] `preflight.sh` passes
-- [ ] `helm install` completes
-- [ ] `smoke-test.sh` passes
+- [ ] Images imported; names match `global.registry`
+- [ ] Kyverno allowlist includes **your** registry
+- [ ] Kind-only Cilium chaining **not** applied on GKE
+- [ ] `values-halden.yaml` filled; secrets rotated
+- [ ] `preflight.sh` exit 0
+- [ ] Helm install complete
+- [ ] `smoke-test.sh` exit 0
 - [ ] Desktop app pointed at `publicUrl`
-- [ ] Secrets rotated from example values

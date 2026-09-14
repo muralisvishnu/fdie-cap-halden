@@ -60,8 +60,10 @@ Halden runs these in **their** environment. You run the same scripts on the **re
 
 | Profile | Use when |
 |---------|----------|
-| `cage` (default) | Reference kind cage — checks egress proxy, kind cluster |
-| `byoc` | Customer cluster — checks registry + images only; uses their kubectl context |
+| `cage` (default) | Vendor kind cage — checks egress proxy, kind cluster |
+| `byoc` | Customer cluster (`TARGET=byoc`) — registry + images only; their kubectl context |
+
+Vendor dedicated GKE lab uses `TARGET=gke` (not this customer profile). See [gke-install-commands.md](gke-install-commands.md).
 
 ### 3. Acceptance (tests + checklist)
 
@@ -129,4 +131,5 @@ That is what makes BYOC auditable without shared cluster access.
 ## Related
 
 - [Release process](release.md) — how you package and tag the bundle
-- [Customer install guide](customer-install.md) — step-by-step for Halden
+- [Customer install guide](customer-install.md) — **start here if you are Halden**
+- [README](../README.md) — which doc to open (customer vs vendor)

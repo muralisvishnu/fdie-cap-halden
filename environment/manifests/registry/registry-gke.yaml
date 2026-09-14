@@ -1,0 +1,14 @@
+# GKE overlay: PVC for the private registry (images survive pod restarts).
+# Do not apply a partial Deployment here — kubectl apply would drop selector/containers.
+# up.sh JSON-patches cage-registry volumes to use this claim.
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: cage-registry-data
+  namespace: cage-system
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 30Gi

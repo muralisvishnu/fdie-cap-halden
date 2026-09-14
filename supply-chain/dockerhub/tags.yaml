@@ -20,6 +20,13 @@ addons:
       upstream: ghcr.io/kyverno/cleanup-controller:v1.13.2
     - tag: kyverno-reports-v1.13.2
       upstream: ghcr.io/kyverno/reports-controller:v1.13.2
+    - tag: kubectl-helper-v1.30.2
+      upstream: registry.k8s.io/kubectl:v1.30.2
+      build: supply-chain/docker/Dockerfile.kubectl-helper
+    - tag: kyverno-cli-v1.13.2
+      upstream: ghcr.io/kyverno/kyverno-cli:v1.13.2
+    - tag: busybox-1.35
+      upstream: docker.io/library/busybox:1.35
   ingress:
     - tag: ingress-controller-v1.15.1
       upstream: registry.k8s.io/ingress-nginx/controller:v1.15.1

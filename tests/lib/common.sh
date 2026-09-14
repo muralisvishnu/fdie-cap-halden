@@ -9,19 +9,21 @@ log() { echo "[test] $*"; }
 
 setup_test_env() {
   ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
-  CLUSTER_NAME="${CLUSTER_NAME:-halden-cage}"
-  CAP_NAMESPACE="${CAP_NAMESPACE:-cap}"
-  TARGET="${TARGET:-cage}"
-  REGISTRY_HOST="${REGISTRY_HOST:-localhost:5001}"
+  # shellcheck source=environment/scripts/kube-env.sh
+  source "${ROOT}/environment/scripts/kube-env.sh"
+
   PUBLIC_URL="${PUBLIC_URL:-http://127.0.0.1:30080}"
   S3_URL="${S3_URL:-http://127.0.0.1:30900}"
-  PREFLIGHT_PROFILE="${PREFLIGHT_PROFILE:-cage}"
+}
 
-  if [[ "${TARGET}" == "gke" || "${TARGET}" == "byoc" ]]; then
-    KUBECTL="${KUBECTL:-kubectl}"
-  else
-    KUBECTL="${KUBECTL:-kubectl --context kind-${CLUSTER_NAME}}"
+# kind hostPorts vs GKE kubectl port-forward. Call from HTTP tests, not preflight.
+ensure_http_urls() {
+  if [[ "${TARGET}" == "byoc" ]]; then
+    log "TARGET=byoc PUBLIC_URL=${PUBLIC_URL} S3_URL=${S3_URL}"
+    return 0
   fi
+  eval "$(TARGET="${TARGET}" KUBE_CONTEXT="${KUBE_CONTEXT:-}" bash "${ROOT}/environment/scripts/port-forwards.sh" env-test)"
+  log "TARGET=${TARGET} context=${KUBE_CONTEXT} PUBLIC_URL=${PUBLIC_URL} S3_URL=${S3_URL}"
 }
 
 kubectl_cmd() {
@@ -33,7 +35,7 @@ assert_http_ok() {
   local url="$1"
   local label="${2:-${url}}"
   TESTS_RUN=$((TESTS_RUN + 1))
-  if curl -fsS "${url}" >/dev/null; then
+  if curl -fsS --max-time 10 "${url}" >/dev/null; then
     TESTS_PASSED=$((TESTS_PASSED + 1))
     log "PASS ${label}"
     return 0

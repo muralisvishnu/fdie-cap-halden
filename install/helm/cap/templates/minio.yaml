@@ -35,6 +35,7 @@ spec:
         app: cap-minio
         halden.cap/component: minio
     spec:
+      {{- include "cap.imagePullSecrets" . | nindent 6 }}
       securityContext:
         runAsUser: 1000
         runAsNonRoot: true
@@ -99,6 +100,7 @@ spec:
         app: cap-minio-setup
         halden.cap/component: minio-setup
     spec:
+      {{- include "cap.imagePullSecrets" . | nindent 6 }}
       restartPolicy: OnFailure
       volumes:
         - name: mc-config

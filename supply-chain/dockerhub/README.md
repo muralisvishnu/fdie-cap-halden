@@ -1,6 +1,6 @@
-# Docker Hub mirror: `muralisvishnu/halden-cage`
+# Docker Hub relay: `muralisvishnu/halden-cage`
 
-GKE `sre-play` mirrors **Cilium, Kyverno, and ingress-nginx** into one private Docker Hub repo. Your laptop pulls from Docker Hub (works on corp network) into the local kind cage.
+**Vendor lab only.** Kind can preload these tags; dedicated GKE `TARGET=gke` pulls them over HTTPS. Customers import **pinned** images into **their** registry — see [`docs/customer-install.md`](../../docs/customer-install.md).
 
 ## Image tags
 

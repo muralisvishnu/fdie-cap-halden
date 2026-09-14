@@ -1,5 +1,7 @@
 # Copy to values-halden.yaml (or your org name) and fill in before helm install.
 # Required contract fields are marked REQUIRED.
+# Also add this registry prefix to Kyverno policy halden-private-registry-only
+# before applying policies (do not leave only localhost:5001 / vendor Hub).
 
 global:
   registry: registry.halden.pharma/cap  # REQUIRED — your private registry prefix

@@ -1,8 +1,15 @@
 .build/
+.tools/
 dist/
+graphify-out/
+**/*.tfstate
+**/*.tfstate.backup
+**/.terraform/
 supply-chain/artifacts/*.spdx.json
 *.log
 !proof/airgap-test.log
+proof/airgap-response.html
+*.cast
 .DS_Store
 .env
 .env.*
