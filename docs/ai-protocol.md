@@ -36,8 +36,8 @@ Ask the human for missing items. **Do not guess** `REGISTRY_HOST`, `PUBLIC_URL`,
 |------|---------|---------------|
 | 1. Cage | `make ensure-colima && make up` | `kubectl --context kind-halden-cage get nodes` Ready |
 | 2. Mirror Cap | `make mirror` | 5 images in `localhost:5001` (cap-web, media-server, mysql, minio, minio-mc) |
-| 3. Addons | `make install-addons` | Cilium, Kyverno, ingress-nginx pods Running |
-| 4. Install Cap | `ALLOW_NON_THURSDAY=1 make install-ingress` | `curl -fsS http://127.0.0.1:30080/login` |
+| 3. Addons | `USE_DOCKERHUB_ADDONS=1 make install-addons TARGET=cage` | Cilium, Kyverno, ingress-nginx pods Running |
+| 4. Install Cap | `helm upgrade --install cap ./install/helm/cap ...` (see `runbook.md`) | `curl -fsS http://127.0.0.1:30080/login` |
 | 5. Smoke | `make test-smoke` | Exit 0 |
 | 6. Proof (optional) | `make airgap-test && make verify-proof` | `proof/airgap-test.log` updated |
 

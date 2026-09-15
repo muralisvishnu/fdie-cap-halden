@@ -36,15 +36,32 @@ COLIMA=1 docker run --rm -v /path/to/corp-ca.pem:/usr/local/share/ca-certificate
 
 ```bash
 cd fdie-cap-halden
-make install-addons
+USE_DOCKERHUB_ADDONS=1 make install-addons TARGET=cage
 ```
 
-3. Optional: switch Cap to Ingress instead of NodePort:
+3. Optional: install Cap via Helm with Ingress enabled (Catch-All on 30080 per ADR-005 — no `/etc/hosts` required):
 
 ```bash
-make install-ingress
-# Add to /etc/hosts: 127.0.0.1 cap.local s3.cap.local
-# Open http://cap.local:30080
+ALLOW_NON_THURSDAY=1 USE_INGRESS=1 helm upgrade --install cap ./install/helm/cap \
+  --kube-context kind-halden-cage \
+  --namespace cap --create-namespace \
+  -f ./install/helm/cap/values-cage.yaml \
+  -f ./install/helm/cap/values-cage-ingress-localhost.yaml \
+  --set global.registry=docker.io/muralisvishnu \
+  --set capWeb.image=halden-cage \
+  --set capWeb.tag=cap-web-latest \
+  --set mediaServer.image=halden-cage \
+  --set mediaServer.tag=media-server-latest \
+  --set mysql.image=halden-cage \
+  --set mysql.tag=mysql-8.0 \
+  --set minio.image=halden-cage \
+  --set minio.tag=minio-latest \
+  --set minio.mcImage=halden-cage \
+  --set minio.mcTag=minio-mc-latest \
+  --timeout 30m \
+  --wait
+
+# Open http://127.0.0.1:30080 in your browser
 ```
 
 ## Cilium without cluster recreate
