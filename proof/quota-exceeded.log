@@ -1,0 +1,6 @@
+# ResourceQuota exceeded 2026-09-15T19:49:39Z
+# cap-quota requests.memory=8Gi; this pod asks 32Gi
+#
+Error from server (Forbidden): error when creating "STDIN": pods "quota-exceed-probe" is forbidden: exceeded quota: cap-quota, requested: limits.memory=32Gi,requests.memory=32Gi, used: limits.memory=3648Mi,requests.memory=1568Mi, limited: limits.memory=16Gi,requests.memory=8Gi
+#
+# Workaround: stay under environment/manifests/noise/quota-limits.yaml

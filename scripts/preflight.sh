@@ -132,12 +132,13 @@ check_gke_hub_images() {
 }
 
 check_images() {
+  # shellcheck disable=SC2086
+  if ${KUBECTL} -n "${CAP_NAMESPACE}" get deployment cap-web >/dev/null 2>&1; then
+    log "Cap already installed in namespace ${CAP_NAMESPACE} — skipping image catalog check"
+    return 0
+  fi
+
   if gke_uses_hub; then
-    # shellcheck disable=SC2086
-    if ${KUBECTL} -n "${CAP_NAMESPACE}" get deployment cap-web >/dev/null 2>&1; then
-      log "GKE: Cap already installed — skip image catalog"
-      return 0
-    fi
     check_gke_hub_images
     return 0
   fi

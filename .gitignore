@@ -7,9 +7,10 @@ graphify-out/
 **/.terraform/
 supply-chain/artifacts/*.spdx.json
 *.log
-!proof/airgap-test.log
+!proof/*.log
 proof/airgap-response.html
 *.cast
+!proof/*.cast
 .DS_Store
 .env
 .env.*

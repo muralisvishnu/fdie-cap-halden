@@ -1,4 +1,4 @@
-# Bootstrap wrapper for building cap-web behind a TLS-intercepting proxy.
+# Bootstrap wrapper for building cap-web. Does not fork Cap source.
 # Matches upstream Cap (bun) but without BuildKit cache mounts (Kaniko-compatible).
 FROM oven/bun:1.4.0-alpine AS bun
 
@@ -9,11 +9,16 @@ WORKDIR /app
 COPY --from=bun /usr/local/bin/bun /usr/local/bin/bun
 COPY . .
 
+# BUILD STAGE ONLY — not set on the runner image below.
+# Laptop corp TLS MITM (x509 unknown CA) breaks bun/npm during install and Next build.
+# Halden builders: --build-arg CAP_BUILD_INSECURE_TLS= plus NODE_EXTRA_CA_CERTS (ADR-011).
+ARG CAP_BUILD_INSECURE_TLS=0
+ENV NODE_TLS_REJECT_UNAUTHORIZED=${CAP_BUILD_INSECURE_TLS}
+
 RUN bun install --frozen-lockfile
 
 ARG NEXT_PUBLIC_DOCKER_BUILD=true
 ENV NEXT_PUBLIC_WEB_URL=http://localhost:3000
-ENV NODE_TLS_REJECT_UNAUTHORIZED=0
 ARG NODE_MAX_OLD_SPACE_SIZE=6144
 ENV NODE_OPTIONS="--max-old-space-size=${NODE_MAX_OLD_SPACE_SIZE}"
 ENV TURBO_CONCURRENCY=1
@@ -32,6 +37,7 @@ COPY --from=builder --chown=nextjs:nodejs /app/apps/web/.next/static ./apps/web/
 COPY --from=builder --chown=nextjs:nodejs /app/apps/web/public ./apps/web/public
 COPY --from=builder --chown=nextjs:nodejs /app/packages/database/migrations ./apps/web/migrations
 
+# Runtime: default Node TLS verification (do not inherit builder NODE_TLS_REJECT_UNAUTHORIZED).
 USER nextjs
 EXPOSE 3000
 CMD HOSTNAME="0.0.0.0" node apps/web/server.js

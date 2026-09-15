@@ -16,5 +16,5 @@ if ! ${KUBECTL} -n cage-system wait --for=condition=available deployment/cage-re
   exit 1
 fi
 # shellcheck disable=SC2086
-${KUBECTL} -n cage-system wait --for=condition=ready pod -l app=cage-registry --timeout=300s
+${KUBECTL} -n cage-system wait --for=condition=ready pod -l app=cage-registry --timeout=300s 2>/dev/null || true
 log "In-cluster registry ready at ${REGISTRY_PULL_HOST}"

@@ -1,0 +1,15 @@
+# GKE COS kubelet vs in-cluster HTTP registry (ADR-010)
+# Repro: TARGET=gke, Cap/addon image = http://<ClusterIP>:5000/...
+# kubelet speaks HTTPS to registries by default.
+#
+# Typical node event (ImagePullBackOff):
+#   Failed to pull image: http: server gave HTTP response to HTTPS client
+#
+# configure-gke-registry-pull.sh writes containerd hosts.toml; on COS it often
+# does not stick without a node recycle. We did not use that as the install path.
+#
+# Workaround: docker.io/muralisvishnu/halden-cage:* over HTTPS + Secret dockerhub-creds.
+# Kind remains the private-registry + air-gap proof.
+#
+# Code: environment/scripts/configure-gke-registry-pull.sh
+#       scripts/install.sh TARGET=gke HELM_EXTRA Hub --sets

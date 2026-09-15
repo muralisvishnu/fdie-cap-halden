@@ -16,7 +16,7 @@ GKE_REGISTRY ?= docker.io/muralisvishnu
 export ROOT TARGET CLUSTER_NAME CAP_NAMESPACE REGISTRY_HOST REGISTRY_INCLUSTER
 export GKE_CLUSTER_NAME GKE_PROJECT GKE_REGION GKE_REGISTRY_NODEPORT
 
-.PHONY: help ensure-colima up down mirror mirror-to-registry export-release-images attest install install-ingress install-gke install-addons install-addons-dockerhub install-addons-gke install-addons-local restore-egress auth-login uninstall rollback airgap-test preflight preflight-gke status status-gke destroy package verify-proof test-smoke test-e2e test-all smoke-test gke-full dockerhub-login
+.PHONY: help ensure-colima up down mirror mirror-to-registry export-release-images attest install install-ingress install-gke install-addons install-addons-dockerhub install-addons-gke install-addons-local restore-egress auth-login uninstall rollback airgap-test preflight preflight-gke status status-gke destroy package verify-proof test-smoke test-e2e test-all smoke-test gke-full dockerhub-login capture-denials capture-constraints record-install
 
 _install_deps:
 ifeq ($(TARGET),cage)
@@ -39,12 +39,14 @@ help:
 	@echo "  make gke-full        Full GKE proof: up → install → smoke → down"
 	@echo "  make status          Show cluster + Cap health"
 	@echo "  make airgap-test     Prove Cap serves with egress fully denied"
+	@echo "  make capture-constraints Refresh freeze/Kyverno/TLS/registry proof logs"
+	@echo "  make record-install  asciinema uncut install (proof/*.cast)"
 	@echo "  make package         BYOC customer bundle"
 
 ensure-colima:
 	@if ! colima status 2>/dev/null | grep -q "Running"; then \
 		echo "Starting Colima..."; \
-		colima start --cpu 4 --memory 8 --disk 60; \
+		colima start --cpu 6 --memory 16 --disk 60; \
 	fi
 	@docker info >/dev/null
 
@@ -141,6 +143,17 @@ uninstall:
 	@bash -c 'source environment/scripts/kube-env.sh && $$HELM uninstall cap -n $$CAP_NAMESPACE 2>/dev/null || true'
 	@bash -c 'source environment/scripts/kube-env.sh && $$KUBECTL -n $$CAP_NAMESPACE delete job --all --ignore-not-found'
 	@bash -c 'source environment/scripts/kube-env.sh && $$KUBECTL -n $$CAP_NAMESPACE delete pvc --all --ignore-not-found'
+	@echo "=== remaining in namespace (cage addons live elsewhere) ==="
+	@bash -c 'source environment/scripts/kube-env.sh && $$KUBECTL -n $$CAP_NAMESPACE get all,pvc 2>/dev/null || true'
+
+capture-constraints:
+	@bash scripts/capture-constraints.sh
+
+capture-denials:
+	@bash scripts/capture-squid-denials.sh
+
+record-install:
+	@bash scripts/record-install.sh
 
 airgap-test:
 	@bash scripts/airgap-test.sh

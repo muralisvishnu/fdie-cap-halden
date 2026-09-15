@@ -61,15 +61,17 @@ Digest parity is then Halden’s responsibility.
 
 ## 3. Helm values
 
-Copy `values-customer.example.yaml` → `values-halden.yaml` and set:
+Copy `values-customer.example.yaml` → `values-halden.yaml`. Day-2 commands and the full field table: [`runbook.md`](runbook.md).
+
+Do **not** start from `values.yaml` / `values-cage*.yaml` / `values-gke*.yaml`. Keep image names **flat** (`cap-web`, not `cap/cap-web`) so Helm `registry/image:tag` matches preflight.
 
 | Value | Required | Notes |
 |-------|----------|-------|
-| `global.registry` | Yes | Private registry prefix (must match imported images) |
-| `publicUrl` | Yes | Cap UI URL (desktop app uses this) |
-| `s3PublicUrl` | Yes | Minio/S3 API URL |
+| `global.registry` | Yes | Same string as `REGISTRY_HOST` (example `registry.halden.pharma/cap`) |
+| `capWeb.image` etc. | Yes | Flat names in the example file |
+| `publicUrl` / `s3PublicUrl` | Yes | Cap UI + Minio; desktop app uses `publicUrl` |
+| `ingress.className` / `host` / `s3Host` | If ingress enabled | Your class and DNS names (not `cap.local`) |
 | `secrets.*` | Yes | Rotate all defaults; External Secrets in prod |
-| `ingress.className` | If ingress enabled | Match **your** ingress controller |
 
 ## 4. Policies (adapt — do not copy kind as-is)
 

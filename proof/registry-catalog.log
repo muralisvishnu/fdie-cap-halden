@@ -1,0 +1,4 @@
+# curl localhost:5001/v2/_catalog 2026-09-15T19:49:39Z
+# After make up with empty registry: {"repositories":[]} — must make mirror
+#
+{"repositories":["cap/cap-web","cap/media-server","cap/minio","cap/minio-mc","cap/mysql","halden/cilium","halden/cilium-envoy","halden/cilium-operator","halden/ingress-certgen","halden/ingress-controller","halden/kyverno","halden/kyverno-background","halden/kyverno-cleanup","halden/kyverno-reports","halden/kyvernopre"]}

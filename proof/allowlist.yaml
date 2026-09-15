@@ -1,46 +1,124 @@
-# Egress allowlist — evidence-derived, not padded.
+# Egress allowlist — evidence-derived (failed pulls, Squid DENIED, corp x509).
 # Each entry: FQDN, port, component, what breaks without it, install-time|permanent
+# allowed:false means we hit the name and it must stay denied (not padded "just in case").
 
 allowlist:
+  # --- Runtime (air-gap): in-cluster only ---
   - fqdn: cage-registry.cage-system.svc.cluster.local
     port: 5000
-    component: all
-    reason: Pull application images from private registry only
+    component: kubelet, all pods
     phase: install-time
-    breaks_without: Pods cannot start; ImagePullBackOff
+    allowed: true
+    reason: Pull Cap/addon images from the private registry
+    breaks_without: ImagePullBackOff
+    evidence: kind extraPortMappings + in-cluster Service; Kyverno private-registry policy
 
   - fqdn: egress-proxy.egress-system.svc.cluster.local
     port: 3128
-    component: cap-web
-    reason: All egress must traverse the corporate proxy (default deny)
-    phase: install-time
-    breaks_without: Any accidental outbound call fails closed at proxy
+    component: cap-web, outbound-runner
+    phase: permanent
+    allowed: true
+    reason: Default-deny — the only HTTP proxy hop
+    breaks_without: Accidental outbound fails closed
+    evidence: Helm HTTP_PROXY; NetworkPolicy port 3128
 
   - fqdn: mysql.cap.svc.cluster.local
     port: 3306
     component: cap-web
-    reason: Application database
     phase: permanent
-    breaks_without: Cap web cannot authenticate or persist data
+    allowed: true
+    reason: Application database
+    breaks_without: Auth/persist fail
+    evidence: DATABASE_URL in cap-web
 
   - fqdn: minio.cap.svc.cluster.local
     port: 9000
     component: cap-web, media-server
-    reason: S3-compatible object storage for recordings
     phase: permanent
-    breaks_without: Uploads and playback fail
+    allowed: true
+    reason: S3-compatible object storage
+    breaks_without: Upload/playback fail
+    evidence: S3_INTERNAL_ENDPOINT
 
   - fqdn: media-server.cap.svc.cluster.local
     port: 3456
     component: cap-web
-    reason: FFmpeg media processing callbacks
     phase: permanent
-    breaks_without: Video processing pipeline stalls
+    allowed: true
+    reason: FFmpeg processing callbacks
+    breaks_without: Video pipeline stalls
+    evidence: MEDIA_SERVER_URL
 
-  # Runtime air-gap: zero external FQDNs required once images are mirrored.
   - fqdn: "(none external at runtime)"
     port: 0
     component: all
-    reason: Halden requires nothing leaves the network after install
     phase: permanent
-    breaks_without: N/A — this is the desired steady state
+    allowed: true
+    reason: Halden — nothing leaves after images are local
+    breaks_without: N/A (desired state)
+    evidence: make airgap-test; proof/airgap-test.log
+
+  # --- Install-time vendor laptop / kind node (then mirrored; not needed at runtime) ---
+  - fqdn: github.com
+    port: 443
+    component: supply-chain/mirror.sh (vendor)
+    phase: install-time
+    allowed: true
+    reason: Clone Cap source to build cap-web / media-server
+    breaks_without: make mirror cannot build Cap
+    evidence: mirror.sh git fetch
+
+  - fqdn: registry-1.docker.io
+    port: 443
+    component: mirror.sh, Hub relay (vendor lab)
+    phase: install-time
+    allowed: true
+    reason: Historically mysql/minio; now Hub tags muralisvishnu/halden-cage (GKE COS cannot pull HTTP registry)
+    breaks_without: Cannot populate private registry or GKE Hub fallback
+    evidence: x509 to quay/ghcr; Hub still works on corp laptop (docs/corp-tls-addons.md)
+
+  - fqdn: index.docker.io
+    port: 443
+    component: docker login / crane
+    phase: install-time
+    allowed: true
+    reason: Docker Hub token auth for vendor relay
+    breaks_without: dockerhub-login / crane digest fail
+    evidence: environment/scripts/dockerhub-login.sh
+
+  # --- Denied (we needed them, they failed, they stay off the allowlist) ---
+  - fqdn: quay.io
+    port: 443
+    component: Cilium upstream
+    phase: install-time
+    allowed: false
+    reason: Corp TLS intercept — x509 unknown authority
+    breaks_without: Direct Cilium pull fails; we relay via Hub instead
+    evidence: docs/corp-tls-addons.md; supply-chain/dockerhub/tags.yaml
+
+  - fqdn: ghcr.io
+    port: 443
+    component: Kyverno upstream
+    phase: install-time
+    allowed: false
+    reason: Same corp MITM
+    breaks_without: Direct Kyverno pull fails
+    evidence: corp-tls-addons.md
+
+  - fqdn: registry.k8s.io
+    port: 443
+    component: ingress-nginx upstream
+    phase: install-time
+    allowed: false
+    reason: Same corp MITM
+    breaks_without: Direct ingress-nginx pull fails
+    evidence: corp-tls-addons.md
+
+  - fqdn: example.com
+    port: 443
+    component: capture-squid-denials.sh
+    phase: proof
+    allowed: false
+    reason: Synthetic denied CONNECT to prove Squid logs TCP_DENIED
+    breaks_without: No denial log for reviewers
+    evidence: make capture-denials — wget via HTTP_PROXY returns bad address / 403 (Cilium + Squid)

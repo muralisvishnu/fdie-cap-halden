@@ -1,0 +1,7 @@
+# docker pull quay.io/cilium/cilium:v1.20.1 2026-09-15T19:49:39Z
+# Expected on corp MITM laptop: x509: certificate signed by unknown authority
+#
+v1.20.1: Pulling from cilium/cilium
+Digest: sha256:ae9ea21f7427fe24bc6ea7247eb552157a1b0a431744045d3f641545ca71d11b
+Status: Downloaded newer image for quay.io/cilium/cilium:v1.20.1
+quay.io/cilium/cilium:v1.20.1

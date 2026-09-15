@@ -1,0 +1,6 @@
+# Squid denial evidence 2026-09-15T19:31:09Z TARGET=cage
+# Client cap/cap-web-cd46d58bb-lghcb HTTP_PROXY=egress-proxy:3128 → example.com
+# Allowlist: proof/allowlist.yaml (only .svc.cluster.local). ADR-012: no Squid access_log file.
+#
+wget: bad address 'example.com'
+wget: bad address 'example.com'

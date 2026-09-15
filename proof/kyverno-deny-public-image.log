@@ -1,0 +1,14 @@
+# kubectl apply forbidden image in namespace cap 2026-09-15T19:49:39Z
+#
+Warning: would violate PodSecurity "restricted:latest": allowPrivilegeEscalation != false (container "nginx" must set securityContext.allowPrivilegeEscalation=false), unrestricted capabilities (container "nginx" must set securityContext.capabilities.drop=["ALL"]), runAsNonRoot != true (pod or container "nginx" must set securityContext.runAsNonRoot=true), seccompProfile (pod or container "nginx" must set securityContext.seccompProfile.type to "RuntimeDefault" or "Localhost")
+Error from server: error when creating "STDIN": admission webhook "validate.kyverno.svc-fail" denied the request: 
+
+resource Pod/cap/kyverno-deny-probe was blocked due to the following policies 
+
+halden-disallow-privileged:
+  no-privileged: 'validation error: Privileged containers are not allowed. rule no-privileged
+    failed at path /spec/containers/0/securityContext/'
+halden-private-registry-only:
+  only-private-registry-containers: 'validation failure: validation error: Container
+    images must come from an approved private registry. rule only-private-registry-containers
+    failed at path /image/'

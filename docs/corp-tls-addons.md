@@ -8,7 +8,7 @@ kind nodes pull images from the internet. On a laptop behind a **TLS-interceptin
 x509: certificate signed by unknown authority
 ```
 
-This is the same class of problem Halden describes ("proxy terminates TLS; our CA is on the wiki"). Docker Hub (`mysql`, `minio`) often works; other registries do not until the **corporate CA is trusted**.
+We **do not** run Squid `ssl_bump` in the cage (**ADR-009**). Proof packet: [`proof/constraints.md`](../proof/constraints.md).
 
 ## What works without admin access
 

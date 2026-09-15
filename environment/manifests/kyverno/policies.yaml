@@ -87,3 +87,50 @@ spec:
               - securityContext:
                   privileged: false
                   allowPrivilegeEscalation: false
+---
+# Extra constraint (harder than “admission exists”): no hostNetwork / hostPID / hostIPC in cap.
+apiVersion: kyverno.io/v1
+kind: ClusterPolicy
+metadata:
+  name: halden-disallow-host-namespaces
+spec:
+  validationFailureAction: Enforce
+  background: true
+  rules:
+    - name: no-host-namespaces
+      match:
+        any:
+          - resources:
+              kinds: ["Pod"]
+              namespaces: ["cap"]
+      validate:
+        message: "hostNetwork, hostPID, and hostIPC are forbidden in the cap namespace"
+        pattern:
+          spec:
+            =(hostNetwork): "false"
+            =(hostPID): "false"
+            =(hostIPC): "false"
+---
+apiVersion: kyverno.io/v1
+kind: ClusterPolicy
+metadata:
+  name: halden-disallow-hostpath
+spec:
+  validationFailureAction: Enforce
+  background: true
+  rules:
+    - name: no-hostpath
+      match:
+        any:
+          - resources:
+              kinds: ["Pod"]
+              namespaces: ["cap"]
+      validate:
+        message: "hostPath volumes are forbidden in the cap namespace"
+        deny:
+          conditions:
+            any:
+              - key: "{{ request.object.spec.volumes[?hostPath] || `[]` | length(@) }}"
+                operator: GreaterThan
+                value: 0
+

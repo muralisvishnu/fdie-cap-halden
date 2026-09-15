@@ -19,11 +19,12 @@ data:
     http_access deny CONNECT !SSL_ports
     http_access allow allowed_domains
     http_access deny all
-    # stdio:/dev/stdout fails on GKE (squid runs as non-root 'proxy' user)
+    # ubuntu/squid:5.2 as non-root: stdio:/dev/stdout fails on GKE; file/stdio
+    # access_log in this image OOMs in kind. Denials are captured from the client
+    # (make capture-denials → 403 via HTTP_PROXY). See ADR-012.
     access_log none
     cache_log /var/log/squid/cache.log
     cache deny all
-    dns_v4_first on
 ---
 apiVersion: apps/v1
 kind: Deployment

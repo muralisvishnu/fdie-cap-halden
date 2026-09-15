@@ -1,20 +1,46 @@
-# Copy to values-halden.yaml (or your org name) and fill in before helm install.
-# Required contract fields are marked REQUIRED.
-# Also add this registry prefix to Kyverno policy halden-private-registry-only
+# Copy to values-halden.yaml and replace every CHANGE_ME / example host.
+# Chart helper is: {{ global.registry }}/{{ image }}:{{ tag }}
+# Preflight (TARGET=byoc) checks REGISTRY_HOST/{cap-web,media-server,mysql,minio,minio-mc}.
+# Keep image names FLAT (not cap/cap-web) so Helm matches imported tags.
+#
+# Also add this registry prefix to Kyverno halden-private-registry-only
 # before applying policies (do not leave only localhost:5001 / vendor Hub).
 
 global:
-  registry: registry.halden.pharma/cap  # REQUIRED — your private registry prefix
+  registry: registry.halden.pharma/cap  # REQUIRED — same as REGISTRY_HOST
+  imagePullPolicy: IfNotPresent
+  # imagePullSecrets:
+  #   - name: halden-registry-creds
 
-# REQUIRED — public URLs users and the desktop app will use (TLS recommended)
+capWeb:
+  image: cap-web
+  tag: latest
+
+mediaServer:
+  image: media-server
+  tag: latest
+
+mysql:
+  image: mysql
+  tag: "8.0"
+
+minio:
+  image: minio
+  tag: latest
+  mcImage: minio-mc
+  mcTag: latest
+
+# REQUIRED — DNS/TLS users and the desktop app will use
 publicUrl: https://cap.halden.pharma
 s3PublicUrl: https://s3.cap.halden.pharma
 
 ingress:
   enabled: true
-  className: nginx  # or your ingress class
+  className: nginx          # REQUIRED if ingress.enabled — your IngressClass
+  host: cap.halden.pharma   # must match publicUrl host
+  s3Host: s3.cap.halden.pharma
 
-# REQUIRED in production — replace all placeholders; never ship defaults
+# REQUIRED in production — replace all placeholders; never ship chart defaults
 secrets:
   mysqlPassword: CHANGE_ME
   mysqlRootPassword: CHANGE_ME

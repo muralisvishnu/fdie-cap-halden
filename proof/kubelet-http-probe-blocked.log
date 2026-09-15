@@ -1,0 +1,4 @@
+# kubelet HTTP probes to cap-web were refused when NetworkPolicy
+# allowExternalIngress=false (node → pod HTTP dropped).
+# Workaround (ADR-007): exec wget probes inside the container.
+# Code: install/helm/cap/templates/cap-web.yaml readinessProbe.exec

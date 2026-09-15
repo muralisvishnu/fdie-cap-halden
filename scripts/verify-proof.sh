@@ -12,6 +12,8 @@ fail() { log "FAIL: $*"; exit 1; }
 required=(
   "${PROOF}/security-checklist.md"
   "${PROOF}/README.md"
+  "${PROOF}/constraints.md"
+  "${PROOF}/allowlist.yaml"
 )
 
 for f in "${required[@]}"; do
@@ -33,6 +35,12 @@ if [[ -f "${PROOF}/airgap-response.html" ]]; then
   log "airgap-response.html present"
 else
   log "WARN: airgap-response.html missing"
+fi
+
+if [[ -f "${PROOF}/squid-denials.log" ]] && grep -Eqi '403|Forbidden|denied|TCP_DENIED|bad address|not known' "${PROOF}/squid-denials.log"; then
+  log "squid-denials.log contains deny/blocked DNS"
+else
+  log "WARN: squid-denials.log missing deny/403 — run 'make capture-denials'"
 fi
 
 # Optional freshness check

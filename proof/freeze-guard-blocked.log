@@ -1,0 +1,7 @@
+# freeze-guard 2026-09-15T19:49:39Z
+# Command: bash governance/scripts/freeze-guard.sh
+#
+[freeze-guard] BLOCKED: Halden change window is Thursday only.
+[freeze-guard] Re-run with --break-glass for emergency installs.
+#
+# Workaround: ALLOW_NON_THURSDAY=1 or --break-glass

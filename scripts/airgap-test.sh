@@ -22,11 +22,19 @@ if [[ -z "${PUBLIC_URL:-}" ]]; then
 fi
 PUBLIC_URL="${PUBLIC_URL:-http://127.0.0.1:30080}"
 
+# Capture denied CONNECTs while the allowlist is still in effect (not the air-gap timestamp).
+if bash "${ROOT}/scripts/capture-squid-denials.sh"; then
+  log "Squid denial proof refreshed (proof/squid-denials.log)"
+else
+  log "WARN: squid denial capture failed — air-gap probe still runs; fix with make capture-denials"
+fi
+
 log "Switching egress proxy to full deny (TARGET=${TARGET} context=${KUBE_CONTEXT})"
+# access_log none — same as the standing config (file logs OOM this Squid image).
 # shellcheck disable=SC2086
 ${KUBECTL} -n egress-system patch configmap egress-proxy-config --type merge -p '{
   "data": {
-    "squid.conf": "http_port 3128\nacl SSL_ports port 443\nacl Safe_ports port 80 443 1025-65535\nacl CONNECT method CONNECT\nhttp_access deny !Safe_ports\nhttp_access deny CONNECT !SSL_ports\nhttp_access deny all\naccess_log stdio:/dev/stdout\ncache_log stdio:/dev/stderr\ncache deny all\n"
+    "squid.conf": "http_port 3128\nacl SSL_ports port 443\nacl Safe_ports port 80 443 1025-65535\nacl CONNECT method CONNECT\nhttp_access deny !Safe_ports\nhttp_access deny CONNECT !SSL_ports\nhttp_access deny all\naccess_log none\ncache_log /var/log/squid/cache.log\ncache deny all\n"
   }
 }'
 # shellcheck disable=SC2086

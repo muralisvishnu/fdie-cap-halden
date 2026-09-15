@@ -43,7 +43,7 @@ cp "${ROOT}/supply-chain/import-release-images.sh" "${STAGE}/scripts/"
 cp "${ROOT}/install/helm/cap/values-customer.example.yaml" "${STAGE}/values-customer.example.yaml"
 cp "${ROOT}/supply-chain/images.yaml" "${STAGE}/"
 cp "${ROOT}/proof/security-checklist.md" "${STAGE}/proof/" 2>/dev/null || true
-cp "${ROOT}/proof/airgap-test.log" "${ROOT}/proof/airgap-response.html" "${STAGE}/proof/" 2>/dev/null || true
+cp "${ROOT}/proof/"*.log "${ROOT}/proof/constraints.md" "${ROOT}/proof/allowlist.yaml" "${STAGE}/proof/" 2>/dev/null || true
 
 log "Test framework (customer lab smoke)"
 mkdir -p "${STAGE}/tests"

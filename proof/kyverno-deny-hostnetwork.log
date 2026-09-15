@@ -1,0 +1,11 @@
+# Apply extra Kyverno policies then dry-run hostNetwork/hostPath 2026-09-15T19:49:39Z
+#
+clusterpolicy.kyverno.io/halden-private-registry-only configured
+clusterpolicy.kyverno.io/halden-require-limits configured
+clusterpolicy.kyverno.io/halden-disallow-privileged configured
+clusterpolicy.kyverno.io/halden-disallow-host-namespaces configured
+clusterpolicy.kyverno.io/halden-disallow-hostpath configured
+--- hostNetwork ---
+Error from server (Forbidden): error when creating "STDIN": pods "hostnet-probe" is forbidden: violates PodSecurity "baseline:latest": host namespaces (hostNetwork=true)
+--- hostPath ---
+Error from server (Forbidden): error when creating "STDIN": pods "hostpath-probe" is forbidden: violates PodSecurity "baseline:latest": hostPath volumes (volume "host")

@@ -1,0 +1,5 @@
+# Apple Silicon → linux/amd64 GKE (QEMU)
+# make mirror TARGET=gke on this Mac: Cap Next.js build under QEMU OOMs / dies.
+# Workaround: skip mirror on Mac; pull Hub tags (ADR-010).
+# Code: environment/scripts/kube-env.sh IMAGE_PLATFORM=linux/amd64 when TARGET=gke
+# Docs: docs/gke-install-commands.md

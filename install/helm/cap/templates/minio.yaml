@@ -69,11 +69,14 @@ spec:
             - name: data
               mountPath: /data
           readinessProbe:
-            httpGet:
-              path: /minio/health/ready
-              port: 9000
+            exec:
+              command:
+                - /bin/sh
+                - -c
+                - curl -f http://127.0.0.1:9000/minio/health/ready
             initialDelaySeconds: 10
             periodSeconds: 10
+            timeoutSeconds: 5
   volumeClaimTemplates:
     - metadata:
         name: data

@@ -27,6 +27,13 @@ spec:
         - name: runner
           image: cage-registry.cage-system.svc.cluster.local:5000/cap/minio-mc:latest
           command: ["/bin/sh", "-c"]
+          env:
+            - name: HTTP_PROXY
+              value: http://egress-proxy.egress-system.svc.cluster.local:3128
+            - name: HTTPS_PROXY
+              value: http://egress-proxy.egress-system.svc.cluster.local:3128
+            - name: NO_PROXY
+              value: "localhost,127.0.0.1,.svc,.cluster.local,cage-registry"
           args:
             - |
               echo "Outbound-only runner: polls registry, no inbound listeners"

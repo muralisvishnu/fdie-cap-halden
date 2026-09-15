@@ -1,0 +1,5 @@
+# wget -Y off http://1.1.1.1 from cap-web (no proxy) 2026-09-15T19:49:39Z
+# Cilium default-deny should block internet without Squid
+#
+Connecting to 1.1.1.1 (1.1.1.1:80)
+wget: download timed out

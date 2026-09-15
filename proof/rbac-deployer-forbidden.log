@@ -1,0 +1,14 @@
+# RBAC least privilege probe 2026-09-15T19:49:39Z
+# cap-deployer ServiceAccount attempting cluster-scoped and cross-namespace access
+#
+--- 1. Get cluster nodes as cap:deployer ---
+Error from server (Forbidden): nodes is forbidden: User "system:serviceaccount:cap:deployer" cannot list resource "nodes" in API group "" at the cluster scope
+--- 2. Get secrets in kube-system as cap:deployer ---
+Error from server (Forbidden): secrets is forbidden: User "system:serviceaccount:cap:deployer" cannot list resource "secrets" in API group "" in the namespace "kube-system"
+--- 3. Allowed namespaced action (get pods in cap) ---
+NAME                                READY   STATUS             RESTARTS      AGE
+cap-media-server-848496cf7b-r9p5r   1/1     Running            0             39m
+cap-minio-0                         1/1     Running            0             39m
+cap-mysql-0                         1/1     Running            4 (72s ago)   39m
+cap-web-cd46d58bb-lghcb             1/1     Running            0             39m
+outbound-runner-78b69bf6f7-sxd5t    0/1     ImagePullBackOff   0             21m

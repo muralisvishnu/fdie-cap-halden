@@ -1,0 +1,4 @@
+# Docker Hub minio/minio (and related) no longer pull for this project.
+# mirror.sh was failing: pull access denied / repository does not exist.
+# Workaround: vendor Hub muralisvishnu/halden-cage:minio-latest (and mysql/mc tags).
+# Code: supply-chain/mirror.sh, supply-chain/dockerhub/tags.yaml

@@ -1,0 +1,13 @@
+# Squid access_log experiment — kind, 2026-09-14
+# Command: apply egress-proxy.yaml with access_log stdio:/tmp (or file) then rollout
+# Result: ubuntu/squid:5.2-22.04_beta OOMKilled. Cage and GKE must keep access_log none.
+#
+# kubectl -n egress-system get pods
+NAME                            READY   STATUS      RESTARTS      AGE
+egress-proxy-679d88f699-6tcwh   0/1     OOMKilled   1 (17s ago)   21s
+#
+# capture-squid-denials.sh:
+error: unable to upgrade connection: container not found ("squid")
+FAIL: cannot read /tmp/squid-access.log
+#
+# Workaround (ADR-012): access_log none; make capture-denials records client wget via HTTP_PROXY.

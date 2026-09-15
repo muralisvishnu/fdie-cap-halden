@@ -8,7 +8,7 @@ This README is a **map**. Use the table below, then open only the doc for your j
 
 | I am… | Goal | Start here | Then |
 |-------|------|------------|------|
-| **Customer (Halden)** installing Cap in **our** cluster | Import images, Helm, smoke | [`docs/customer-install.md`](docs/customer-install.md) | [`docs/install-contract.md`](docs/install-contract.md) · [`docs/customer-image-delivery.md`](docs/customer-image-delivery.md) · copy [`install/helm/cap/values-customer.example.yaml`](install/helm/cap/values-customer.example.yaml) |
+| **Customer (Halden)** installing Cap in **our** cluster | Import images, Helm, smoke | [`docs/runbook.md`](docs/runbook.md) (values + commands) | [`docs/customer-install.md`](docs/customer-install.md) · [`docs/install-contract.md`](docs/install-contract.md) · copy [`install/helm/cap/values-customer.example.yaml`](install/helm/cap/values-customer.example.yaml) |
 | Customer receiving a tarball | Air-gap image drop | [`docs/customer-image-delivery.md`](docs/customer-image-delivery.md) | Same install guide as above |
 | Customer / auditor | What “pass” means | [`docs/install-contract.md`](docs/install-contract.md) | [`proof/security-checklist.md`](proof/security-checklist.md) |
 | **Vendor** proving the stack on a laptop | kind cage | This README → *Vendor: kind* | [`docs/runbook.md`](docs/runbook.md) |
@@ -22,7 +22,7 @@ This README is a **map**. Use the table below, then open only the doc for your j
 
 1. Read [`docs/install-contract.md`](docs/install-contract.md) so you know the three gates: inputs → `preflight.sh` → install → `smoke-test.sh`.
 2. Follow [`docs/customer-install.md`](docs/customer-install.md) in order (do not skip Kyverno registry allowlist).
-3. Fill **your** `values-halden.yaml` from `values-customer.example.yaml` (registry, URLs, secrets, ingress class).
+3. Fill **your** `values-halden.yaml` from `values-customer.example.yaml` (flat image names, registry, URLs, secrets, ingress host/class). Commands: [`docs/runbook.md`](docs/runbook.md).
 4. Import **pinned** images per [`docs/customer-image-delivery.md`](docs/customer-image-delivery.md) (Tier 1) or build only if policy requires Tier 2 ([`docs/image-supply-model.md`](docs/image-supply-model.md)).
 5. Apply **adapted** policy examples from the bundle — not kind-specific Cilium chaining and not the vendor Docker Hub allowlist as-is.
 6. Pass = `preflight.sh` and `smoke-test.sh` both exit 0 in **your** lab.
@@ -84,21 +84,34 @@ If you omit `REGISTRY_HOST` / `VALUES_FILE`, preflight looks for `docker.io/mura
 ## Vendor: kind (reference cage)
 
 ```bash
-export TARGET=cage
-make ensure-colima
-make up
-make mirror
-make install-addons
-ALLOW_NON_THURSDAY=1 make install-ingress
-make test-smoke
-make airgap-test
+make down TARGET=cage
+make up TARGET=cage
+USE_DOCKERHUB_ADDONS=1 make install-addons TARGET=cage
+# Helm install Cap from Docker Hub (see docs/runbook.md)
+make test-smoke TARGET=cage
+make test-e2e TARGET=cage
+make airgap-test TARGET=cage
+make test-all TARGET=cage
 ```
 
-Open **http://127.0.0.1:30080**. OTP: `make auth-login`. If `make mirror` skips Cap, force: `CAP_MIRROR_FORCE=1 make mirror TARGET=cage`.
+Full bring-up, rollback, and uninstall details: [`docs/runbook.md`](docs/runbook.md).
 
 ## Vendor: dedicated GKE lab (`halden-cage-gke`)
 
-Same Make target names, `TARGET=gke`. On Apple Silicon **do not** `make mirror` (amd64 QEMU OOM). Pull Cap/addons from Docker Hub `muralisvishnu/halden-cage:*`. Full sequence: [`docs/gke-install-commands.md`](docs/gke-install-commands.md).
+```bash
+export TARGET=gke GKE_PROJECT=sre-play GKE_REGION=us-west1
+make down TARGET=gke
+make up TARGET=gke
+make dockerhub-login TARGET=gke
+USE_DOCKERHUB_ADDONS=1 make install-addons TARGET=gke
+# Helm install Cap from Docker Hub (see docs/runbook.md)
+make test-smoke TARGET=gke
+make test-e2e TARGET=gke
+make airgap-test TARGET=gke
+make test-all TARGET=gke
+```
+
+Full sequence, rollback, and uninstall: [`docs/gke-install-commands.md`](docs/gke-install-commands.md) and [`docs/runbook.md`](docs/runbook.md).
 
 **Not the same cluster** as shared `gke_sre-play_us-west1_infra` (`make install-gke`). That path is legacy: [`docs/gke-infra-deploy.md`](docs/gke-infra-deploy.md).
 

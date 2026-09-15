@@ -33,7 +33,8 @@ Use this checklist for FDIE sign-off and customer handoff. Mark each item in you
 ## Smoke & e2e
 
 - [ ] `scripts/smoke-test.sh` passes (`/login`, pods ready, Minio health)
-- [ ] Reference cage: `make test-e2e` / airgap proof fresh (`proof/airgap-test.log`)
+- [ ] `make capture-denials` — `proof/squid-denials.log` has `TCP_DENIED`
+- [ ] Reference cage: `make airgap-test` (`proof/airgap-test.log`)
 - [ ] `scripts/verify-proof.sh` passes before release bundle
 
 ## Known gaps (document for customer)

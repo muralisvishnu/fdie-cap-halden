@@ -1,31 +1,22 @@
-# Demo recording (asciinema)
+# Demo recording (uncut install)
 
-Record a walkthrough of the Halden cage for the FDIE submission.
-
-## Install asciinema
+The brief asks for **one install from zero, uncut**. Commit `proof/halden-cap-demo.cast`.
 
 ```bash
 brew install asciinema
-```
-
-## Suggested script
-
-```bash
-asciinema rec proof/halden-cap-demo.cast
-
-# Inside the recording:
-make status
-curl -fsS http://127.0.0.1:30080/login | head -1
-make airgap-test
-bash scripts/auth-login.sh demo@halden.local
-# (submit email in browser, paste OTP from logs)
+export TARGET=cage
+make record-install
+# inside the recording:
+make down TARGET=cage
+make up TARGET=cage
+make mirror TARGET=cage
+make install-addons TARGET=cage
+ALLOW_NON_THURSDAY=1 make install-ingress TARGET=cage
+make capture-denials TARGET=cage
+make airgap-test TARGET=cage
+make test-smoke TARGET=cage
 exit
+git add proof/halden-cap-demo.cast && git commit -m "Add uncut kind install recording"
 ```
 
-## Upload
-
-```bash
-asciinema upload proof/halden-cap-demo.cast
-```
-
-Commit the `.cast` file or link in your README / submission.
+Do not edit the cast. Kind only — GKE Hub path is a separate lab (ADR-010).
